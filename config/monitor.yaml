@@ -1,0 +1,52 @@
+# Video Monitor Configuration
+
+# Frame Analysis Settings
+frame_analysis:
+  buffer_size: 10  # Number of frames to keep in buffer
+  motion_threshold: 1000  # Minimum pixel difference for motion detection
+  progress_threshold: 0.9  # 90% of video must be watched
+  blur_threshold: 100  # Minimum blur score for video playing detection
+  
+# Progress Bar Detection
+progress_bar:
+  # HSV color ranges for progress bar detection
+  color_ranges:
+    white:
+      lower: [0, 0, 200]  # [H, S, V]
+      upper: [180, 30, 255]
+    gray:
+      lower: [0, 0, 100]
+      upper: [180, 30, 200]
+  
+  # Region of interest for progress bar detection
+  roi:
+    top_percent: 0.8  # Start at 80% of frame height
+    height_percent: 0.1  # Use 10% of frame height
+    
+  # Minimum size for valid progress bar
+  min_width_percent: 0.3  # Must be at least 30% of frame width
+  min_height_pixels: 5  # Must be at least 5 pixels high
+
+# Template Matching
+template_matching:
+  threshold: 0.8  # Minimum confidence for template match
+  scale_range: [0.8, 1.2]  # Scale range for template search
+  scale_steps: 5  # Number of scales to try
+
+# Screenshot Settings
+screenshots:
+  max_per_session: 100  # Maximum screenshots per session
+  jpeg_quality: 95  # JPEG quality for saved screenshots
+  png_compression: 9  # PNG compression level
+
+# Error Recovery
+error_recovery:
+  max_retries: 3  # Maximum retry attempts
+  retry_delay: 1.0  # Delay between retries in seconds
+  save_error_frames: true  # Save frames that cause errors
+
+# Logging
+logging:
+  frame_metrics: true  # Log frame analysis metrics
+  save_debug_frames: false  # Save frames for debugging
+  metrics_interval: 60  # Log metrics every 60 seconds 

@@ -1,0 +1,189 @@
+# Error Handling Configuration
+
+# General error handling settings
+error_handling:
+  max_retries: 3
+  backoff_factor: 2.0
+  max_backoff: 60.0
+  default_timeout: 30.0
+
+# Retry settings for different operations
+retry_settings:
+  browser:
+    max_attempts: 3
+    backoff_factor: 2.0
+    max_backoff: 30.0
+    exceptions:
+      - NetworkError
+      - BrowserError
+      - TimeoutError
+  
+  monitor:
+    max_attempts: 2
+    backoff_factor: 1.5
+    max_backoff: 10.0
+    exceptions:
+      - MonitorError
+      - IOError
+  
+  ai:
+    max_attempts: 3
+    backoff_factor: 2.0
+    max_backoff: 60.0
+    exceptions:
+      - AIError
+      - NetworkError
+      - TimeoutError
+
+# Logging configuration
+logging:
+  log_dir: logs
+  max_size: 10485760  # 10MB
+  backup_count: 5
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"
+  
+  # Log levels for different components
+  levels:
+    browser: INFO
+    monitor: DEBUG
+    ai: INFO
+    main: INFO
+    utils: INFO
+  
+  # Log file configuration
+  files:
+    general:
+      filename: cert_automation.log
+      level: INFO
+    
+    error:
+      filename: cert_automation_error.log
+      level: ERROR
+    
+    debug:
+      filename: cert_automation_debug.log
+      level: DEBUG
+  
+  # Log rotation settings
+  rotation:
+    max_size: 10485760  # 10MB
+    max_days: 30
+    compress: true
+    interval: 3600  # 1 hour
+    backup_count: 5
+
+# Error recovery strategies
+recovery:
+  browser:
+    # Actions to take on browser errors
+    actions:
+      - refresh_page
+      - clear_cookies
+      - restart_browser
+    
+    # Conditions for different recovery strategies
+    conditions:
+      timeout:
+        strategy: refresh_page
+        max_attempts: 2
+      
+      connection_lost:
+        strategy: restart_browser
+        max_attempts: 1
+      
+      element_not_found:
+        strategy: refresh_page
+        max_attempts: 3
+  
+  monitor:
+    # Actions for screen monitoring errors
+    actions:
+      - recapture_screen
+      - adjust_region
+      - restart_monitor
+    
+    # Recovery strategies for different scenarios
+    conditions:
+      capture_failed:
+        strategy: recapture_screen
+        max_attempts: 2
+      
+      region_not_found:
+        strategy: adjust_region
+        max_attempts: 3
+  
+  ai:
+    # Actions for AI-related errors
+    actions:
+      - retry_request
+      - switch_model
+      - fallback_local
+    
+    # Recovery strategies for AI operations
+    conditions:
+      api_error:
+        strategy: retry_request
+        max_attempts: 3
+      
+      model_error:
+        strategy: switch_model
+        max_attempts: 2
+      
+      timeout:
+        strategy: fallback_local
+        max_attempts: 1
+
+# Metrics and monitoring
+metrics:
+  # Error rate thresholds
+  thresholds:
+    error_rate:
+      warning: 0.1  # 10% error rate triggers warning
+      critical: 0.25  # 25% error rate triggers critical alert
+    
+    response_time:
+      warning: 5000  # 5 seconds
+      critical: 15000  # 15 seconds
+    memory_usage:
+      warning: 0.8  # 80% of available memory
+      critical: 0.9  # 90% of available memory
+  
+  # Collection intervals
+  intervals:
+    error_metrics: 60  # Collect error metrics every 60 seconds
+    performance_metrics: 30  # Collect performance metrics every 30 seconds
+    cleanup_interval: 3600  # Clean up old metrics every hour
+  
+  # Aggregation settings
+  aggregation:
+    window_size: 3600  # 1 hour
+    bucket_size: 300  # 5 minutes
+
+# Debug mode settings
+debug:
+  enabled: false
+  verbose: false
+  save_screenshots: true
+  log_network: true
+  log_performance: true
+  trace_ai: true
+
+# Error tracking
+error_tracking:
+  enabled: true
+  sample_rate: 1.0  # Track all errors
+  max_stack_frames: 50
+  ignore_errors: []  # List of error types to ignore
+  
+  persistence:
+    enabled: true
+    format: "json"
+    retention_days: 90
+    max_size_per_file: 52428800  # 50MB
+
+# Circuit breaker settings
+circuit_breaker:
+  failure_threshold: 5  # Number of failures before opening
+  reset_timeout: 60  # Seconds to wait before attempting reset
+  half_open_timeout: 30  # Seconds to wait in half-open state 
