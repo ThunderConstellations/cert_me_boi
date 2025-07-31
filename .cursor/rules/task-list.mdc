@@ -82,7 +82,7 @@ When working with task lists, the AI should:
 5. Document implementation details, especially for complex features
 6. When implementing tasks one by one, first check which task to implement next
 7. After implementing a task, update the file to reflect progress
-8. Continue with next ask unless told not to by user
+8. Continue with next task unless told not to by user
 
 ## Example Task Update
 

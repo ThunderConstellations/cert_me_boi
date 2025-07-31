@@ -9,6 +9,54 @@ from typing import Optional, Dict, Any, List, Tuple
 from src.utils.logger import ai_logger, log_ai_interaction, log_error_with_context, logger, log_execution_time
 
 class ModelHandler:
+    # Model metadata dictionary for robust model identification
+    MODEL_METADATA = {
+        # Free models
+        "deepseek-ai/deepseek-coder-6.7b-instruct": {
+            "provider": "openrouter",
+            "is_free": True,
+            "description": "Free Deepseek model for coding and general tasks",
+            "recommended_for": ["coding", "text generation", "question answering"]
+        },
+        "deepseek-ai/deepseek-coder-33b-instruct": {
+            "provider": "openrouter",
+            "is_free": True,
+            "description": "Free Deepseek model for advanced coding tasks",
+            "recommended_for": ["coding", "complex programming", "code review"]
+        },
+        "microsoft/phi-2": {
+            "provider": "local",
+            "is_free": True,
+            "description": "Free Microsoft Phi model for general tasks",
+            "recommended_for": ["text generation", "summarization", "general AI tasks"]
+        },
+        "microsoft/phi-3-mini": {
+            "provider": "local",
+            "is_free": True,
+            "description": "Free Microsoft Phi-3 Mini model for efficient text generation",
+            "recommended_for": ["text generation", "summarization", "lightweight tasks"]
+        },
+        # Premium models
+        "openai/gpt-4": {
+            "provider": "openrouter",
+            "is_free": False,
+            "description": "Premium GPT-4 model with advanced capabilities",
+            "recommended_for": ["complex tasks", "high-quality output", "creative writing"]
+        },
+        "anthropic/claude-3-opus": {
+            "provider": "openrouter",
+            "is_free": False,
+            "description": "Premium Claude-3 Opus model for advanced reasoning",
+            "recommended_for": ["complex reasoning", "analysis", "research"]
+        },
+        "anthropic/claude-3-sonnet": {
+            "provider": "openrouter",
+            "is_free": False,
+            "description": "Premium Claude-3 Sonnet model for balanced performance",
+            "recommended_for": ["general tasks", "analysis", "content creation"]
+        }
+    }
+
     def __init__(self, config_path: str = "config/courses.yaml"):
         """Initialize the model handler with configuration"""
         self.config = self._load_config(config_path)
@@ -34,12 +82,12 @@ class ModelHandler:
         try:
             model_name = model_name or self.ai_config['default_model']
             provider = self.ai_config.get('default_provider', 'openrouter')
-            
+
             # Try OpenRouter first if configured
             if provider == 'openrouter' and self.ai_config.get('api_key'):
                 logger.info(f"Using OpenRouter with model: {model_name}", module="ai")
                 return True  # OpenRouter models are loaded on-demand
-            
+
             # Fallback to local model
             logger.info(f"Loading local model: {model_name}", module="ai")
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -61,14 +109,14 @@ class ModelHandler:
         try:
             fallback_model = "microsoft/phi-2"  # Simple, reliable fallback
             logger.info(f"Loading fallback model: {fallback_model}", module="ai")
-            
+
             self.tokenizer = AutoTokenizer.from_pretrained(fallback_model)
             self.model = AutoModelForCausalLM.from_pretrained(
                 fallback_model,
                 torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
                 device_map="auto"
             )
-            
+
             logger.info(f"Fallback model {fallback_model} loaded successfully", module="ai")
             return True
         except Exception as e:
@@ -84,12 +132,13 @@ class ModelHandler:
                 logger.info("Attempting to use OpenRouter API", module="ai")
                 openrouter_models = self.ai_config.get('openrouter_models', [])
                 model = openrouter_models[0] if openrouter_models else None
-                result = self.call_openrouter(prompt, model)                if result:
-                    logger.info("Text generated successfully via OpenRouter", module="ai", length=len(result))
+                result = self.call_openrouter(prompt, model)
+                if result:
+                    logger.info("Text generated successfully via OpenRouter", module="ai", response_length=len(result))
                     return result
                 else:
                     logger.warning("OpenRouter failed, falling back to local model", module="ai")
-            
+
             # Fallback to local model
             if not self.model or not self.tokenizer:
                 if not self.load_model():
@@ -109,7 +158,7 @@ class ModelHandler:
             )
 
             response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            logger.info("Text generated successfully via local model", module="ai", length=len(response))
+            logger.info("Text generated successfully via local model", module="ai", response_length=len(response))
             return response
         except Exception as e:
             logger.error(f"Text generation failed: {str(e)}", module="ai")
@@ -128,31 +177,34 @@ class ModelHandler:
             return None
 
     def call_openrouter(self, prompt: str, model: Optional[str] = None) -> Optional[str]:
-        """Call OpenRouter API for text generation with free Deepseek models"""
+        """Call OpenRouter API for text generation with free Deepseek R1 model"""
         try:
-            # Use the first free Deepseek model by default
+            # Use the DeepSeek R1 model by default (best free model)
             if not model:
                 free_models = self.ai_config.get('model_categories', {}).get('free_models', [])
-                model = free_models[0] if free_models else "deepseek-ai/deepseek-coder-6.7b-instruct"
-            
-            # Check if API key is available (optional for some free models)
+                model = free_models[0] if free_models else "deepseek/deepseek-r1-0528:free"
+
+            # Check if API key is available (optional for free models like DeepSeek R1)
             api_key = self.ai_config.get('api_key')
-            if not api_key:
-                logger.info("No OpenRouter API key provided, using local model", module="ai")
-                return None
             
+            # Some free models like DeepSeek R1 might work without API key
             headers = {
-                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
                 "HTTP-Referer": "https://cert-me-boi.com",  # Add referer for better tracking
                 "X-Title": "Cert Me Boi - Course Automation"  # Add title for better tracking
             }
             
+            # Add authorization header if API key is available
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            else:
+                logger.info(f"No API key provided, attempting to use free model: {model}", module="ai")
+
             data = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": self.ai_config.get('temperature', 0.7),
-                "max_tokens": self.ai_config.get('max_tokens', 500)
+                "max_tokens": self.ai_config.get('max_tokens', 1000)  # Increased for R1 model
             }
 
             logger.info(f"Calling OpenRouter API with model: {model}", module="ai")
@@ -160,18 +212,25 @@ class ModelHandler:
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers=headers,
                 json=data,
-                timeout=30  # Add timeout for better user experience
+                timeout=60  # Increased timeout for R1 model (reasoning takes time)
             )
-            
+
             if response.status_code == 200:
                 result = response.json()
                 text = result['choices'][0]['message']['content']
                 usage = result.get('usage', {})
-                logger.info("OpenRouter API call successful", module="ai", 
+                logger.info("OpenRouter API call successful", module="ai",
                           model=model, tokens_used=usage.get('total_tokens', 0))
+                
+                # Log special success for DeepSeek R1
+                if model == "deepseek/deepseek-r1-0528:free":
+                    logger.info("🚀 DeepSeek R1 model used successfully - o1-level performance!", module="ai")
+                
                 return text
             elif response.status_code == 401:
                 logger.error("OpenRouter API key invalid or expired", module="ai")
+                if not api_key:
+                    logger.info("Try getting a free API key from https://openrouter.ai for better access", module="ai")
                 return None
             elif response.status_code == 429:
                 logger.warning("OpenRouter API rate limit exceeded, falling back to local model", module="ai")
@@ -180,7 +239,7 @@ class ModelHandler:
                 logger.error(f"OpenRouter API error: {response.status_code} - {response.text}", module="ai")
                 return None
         except requests.exceptions.Timeout:
-            logger.warning("OpenRouter API request timed out, falling back to local model", module="ai")
+            logger.warning("OpenRouter API request timed out (R1 reasoning can take time), falling back to local model", module="ai")
             return None
         except requests.exceptions.RequestException as e:
             logger.error(f"OpenRouter API request failed: {str(e)}", module="ai")
@@ -266,7 +325,8 @@ class ModelHandler:
         }
 
     def get_model_info(self, model_name: str) -> Dict[str, Any]:
-        """Get information about a specific model"""
+        """Get information about a specific model using exact dictionary matching"""
+        # Default model info structure
         model_info = {
             'name': model_name,
             'provider': 'unknown',
@@ -274,25 +334,30 @@ class ModelHandler:
             'description': '',
             'recommended_for': []
         }
-        
-        free_models = self.ai_config.get('model_categories', {}).get('free_models', [])
-        premium_models = self.ai_config.get('model_categories', {}).get('premium_models', [])
-        
-        if model_name in free_models:
-            model_info['provider'] = 'openrouter'
-            model_info['is_free'] = True
-            if 'deepseek' in model_name.lower():
-                model_info['description'] = 'Free Deepseek model for coding and general tasks'
-                model_info['recommended_for'] = ['coding', 'text generation', 'question answering']
-            elif 'phi' in model_name.lower():
-                model_info['description'] = 'Free Microsoft Phi model for general tasks'
-                model_info['recommended_for'] = ['text generation', 'summarization']
-        elif model_name in premium_models:
-            model_info['provider'] = 'openrouter'
-            model_info['is_free'] = False
-            model_info['description'] = 'Premium model with advanced capabilities'
-            model_info['recommended_for'] = ['complex tasks', 'high-quality output']
-        
+
+        # Check if model exists in our metadata dictionary
+        if model_name in self.MODEL_METADATA:
+            metadata = self.MODEL_METADATA[model_name]
+            model_info.update(metadata)
+            logger.info(f"Model info retrieved from metadata dictionary", module="ai", model=model_name)
+        else:
+            # Fallback to config-based categorization for unknown models
+            free_models = self.ai_config.get('model_categories', {}).get('free_models', [])
+            premium_models = self.ai_config.get('model_categories', {}).get('premium_models', [])
+
+            if model_name in free_models:
+                model_info['provider'] = 'openrouter'
+                model_info['is_free'] = True
+                model_info['description'] = 'Free model (not in metadata dictionary)'
+                model_info['recommended_for'] = ['general tasks']
+            elif model_name in premium_models:
+                model_info['provider'] = 'openrouter'
+                model_info['is_free'] = False
+                model_info['description'] = 'Premium model (not in metadata dictionary)'
+                model_info['recommended_for'] = ['complex tasks']
+            else:
+                logger.warning(f"Model {model_name} not found in metadata or config", module="ai")
+
         return model_info
 
     def set_model(self, model_name: str) -> bool:
@@ -300,7 +365,7 @@ class ModelHandler:
         try:
             available_models = self.get_available_models()
             all_models = available_models['free_models'] + available_models['premium_models']
-            
+
             if model_name in all_models:
                 self.ai_config['default_model'] = model_name
                 logger.info(f"Default model set to: {model_name}", module="ai")
@@ -317,7 +382,7 @@ class ModelHandler:
         try:
             model_name = model_name or self.ai_config['default_model']
             test_prompt = "Hello, this is a test message. Please respond with 'Connection successful' if you can see this."
-            
+
             result = {
                 'model': model_name,
                 'status': 'unknown',
@@ -325,7 +390,7 @@ class ModelHandler:
                 'error': None,
                 'provider': 'unknown'
             }
-            
+
             # Try OpenRouter first
             if self.ai_config.get('api_key'):
                 response = self.call_openrouter(test_prompt, model_name)
@@ -334,7 +399,7 @@ class ModelHandler:
                     result['response'] = response
                     result['provider'] = 'openrouter'
                     return result
-            
+
             # Try local model
             if self.model and self.tokenizer:
                 response = self.generate_text(test_prompt)
@@ -343,11 +408,11 @@ class ModelHandler:
                     result['response'] = response
                     result['provider'] = 'local'
                     return result
-            
+
             result['status'] = 'failed'
             result['error'] = 'No working model found'
             return result
-            
+
         except Exception as e:
             return {
                 'model': model_name,

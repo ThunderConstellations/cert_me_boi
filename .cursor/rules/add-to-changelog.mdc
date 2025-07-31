@@ -37,7 +37,7 @@ Update the project's CHANGELOG.md file with a new entry.
 
 ## Format:
 
-Follow [Keep a Changelog](mdc:https:/keepachangelog.com) format:
+Follow [Keep a Changelog](https:/keepachangelog.com) format:
 
 - Group changes by type
 - List changes as bullet points

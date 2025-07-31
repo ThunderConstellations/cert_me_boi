@@ -120,8 +120,8 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
-.venv
+.env*
+.venv*
 env/
 venv/
 ENV/
@@ -172,21 +172,124 @@ logs/*
 # Configuration files with sensitive data
 config/secrets.yaml
 config/api_keys.yaml
+config/personal.yaml
+config/user_config.yaml
+config/*_personal.yaml
+config/*_user.yaml
 
-# Browser automation
+# Personal and sensitive information
+.env
+.env.*
+secrets.json
+api_keys.json
+credentials.json
+personal_config.json
+user_data.json
+*.secret
+*.private
+*.personal
+
+# AI and development traces (hide AI assistance)
+.cursor/
+.specstory/
+.autopilot.json
+.ai_history/
+.chat_logs/
+.conversation_logs/
+ai_logs/
+openrouter_logs/
+model_logs/
+assistant_logs/
+copilot_logs/
+claude_logs/
+gpt_logs/
+deepseek_logs/
+*.ai_log
+*.chat_log
+*.conversation
+*.ai_cache
+
+# IDE and editor files (comprehensive)
+.vscode/
+.idea/
+.fleet/
+.vs/
+.history/
+.devcontainer/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.editorconfig
+.prettierrc*
+.eslintrc*
+
+# Browser automation and testing
 browser_data/
 playwright-report/
 test-results/
+user_data_dir/
+chrome_user_data/
+firefox_profile/
+browser_profiles/
+session_data/
+cookies.txt
+local_storage.json
 
-# AI model cache
+# AI model cache and artifacts
 models/
 .cache/
+.model_cache/
+.ai_cache/
+huggingface_cache/
+transformers_cache/
+torch_cache/
+model_artifacts/
+*.model
+*.bin
+*.safetensors
+*.onnx
+model_downloads/
 
-# Temporary files
+# Personal development files
+notes.md
+todo.md
+personal_notes.md
+development_notes.md
+scratch.py
+test_personal.py
+debug_*.py
+temp_*.py
+*.draft
+*.wip
+
+# Temporary and debug files
 *.tmp
 *.temp
 temp/
 tmp/
+debug/
+scratch/
+working/
+draft/
+*.debug
+*.log
+debug_*.txt
+temp_*.txt
+
+# Personal automation data
+automation_history/
+user_sessions/
+personal_data/
+user_profiles/
+session_backups/
+automation_logs/
+course_data/
+progress_data/
+*.session
+*.progress
 
 # OS generated files
 .DS_Store
@@ -196,13 +299,36 @@ tmp/
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
 
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Windows specific
+*.lnk
+*.exe.manifest
+*.application.manifest
 
-# Social image (will be uploaded to GitHub assets)
-cert-me-boi-social.png 
+# Local configuration overrides
+local_config.py
+local_settings.py
+dev_config.py
+personal_config.py
+user_config.py
+local.yaml
+dev.yaml
+
+# Documentation that might reveal development process
+DEVELOPMENT.md
+AI_NOTES.md
+PERSONAL_README.md
+IMPLEMENTATION_NOTES.md
+*.draft.md
+
+# Version control artifacts
+.gitconfig_local
+.git_credentials
+.github_token
+
+# Social media assets (will be hosted separately)
+cert-me-boi-social.png
+social_images/
+marketing_assets/

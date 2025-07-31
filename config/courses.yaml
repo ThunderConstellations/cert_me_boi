@@ -1,194 +1,174 @@
-# Course Automation Configuration
-
-# Global Settings
 settings:
-  headless: false  # Run browser in headless mode
-  screenshot_dir: "data/screenshots"
-  certificate_dir: "data/certificates"
-  template_dir: "data/templates"
-  timeout: 30  # Default timeout in seconds
+  headless: false
+  screenshot_dir: data/screenshots
+  certificate_dir: data/certificates
+  template_dir: data/templates
+  timeout: 30
   retry_attempts: 3
-  delay_between_actions: 2  # Seconds between actions
+  delay_between_actions: 2
   capture_video: true
-  log_level: "INFO"
-
-# AI Settings
+  log_level: INFO
 ai:
-  # Model Configuration - Default to OpenRouter with free Deepseek models
-  default_provider: "openrouter"  # openrouter, local, or huggingface
-  default_model: "deepseek-ai/deepseek-coder-6.7b-instruct"  # Free local model as fallback
+  default_provider: openrouter
+  default_model: deepseek/deepseek-r1-0528:free
   openrouter_models:
-    - "deepseek-ai/deepseek-coder-6.7b-instruct"  # Free Deepseek model
-    - "deepseek-ai/deepseek-llm-7b-chat"  # Free Deepseek chat model
-    - "deepseek-ai/deepseek-math-7b-instruct"  # Free Deepseek math model
-    - "microsoft/phi-2"  # Free Microsoft model
-    - "microsoft/phi-3-mini-4k-instruct"  # Free Microsoft model
+  - deepseek/deepseek-r1-0528:free
+  - deepseek-ai/deepseek-coder-6.7b-instruct
+  - deepseek-ai/deepseek-llm-7b-chat
+  - deepseek-ai/deepseek-math-7b-instruct
+  - microsoft/phi-2
+  - microsoft/phi-3-mini-4k-instruct
   temperature: 0.7
-  max_tokens: 500
-  api_key: ""  # Add your OpenRouter API key here (optional for free models)
-  
-  # User-friendly model selection
+  max_tokens: 1000
+  api_key: ''
+  use_openrouter: true
+  fallback_to_local: true
   model_categories:
     free_models:
-      - "deepseek-ai/deepseek-coder-6.7b-instruct"
-      - "deepseek-ai/deepseek-llm-7b-chat"
-      - "microsoft/phi-2"
-      - "microsoft/phi-3-mini-4k-instruct"
+    - deepseek/deepseek-r1-0528:free
+    - deepseek-ai/deepseek-coder-6.7b-instruct
+    - deepseek-ai/deepseek-llm-7b-chat
+    - deepseek-ai/deepseek-math-7b-instruct
+    - microsoft/phi-2
+    - microsoft/phi-3-mini-4k-instruct
     premium_models:
-      - "anthropic/claude-3.5-sonnet"
-      - "openai/gpt-4"
-      - "google/gemini-pro"
-  
-  # Text Recognition
+    - anthropic/claude-3.5-sonnet
+    - openai/gpt-4
+    - google/gemini-pro-1.5
+    - meta-llama/llama-3.1-8b-instruct
   text_recognition:
     name: tesseract
     language: eng
-    config: '--oem 3 --psm 6'
-  
-  # Text Generation
+    config: --oem 3 --psm 6
   text_generation:
     name: gpt-3
-    temperature: 0.7
-    max_tokens: 100
-  
-  # Thresholds
+    config:
+      model: text-davinci-003
+      max_tokens: 500
+      temperature: 0.7
   thresholds:
     text_confidence: 0.8
     image_match: 0.9
-  
-  # Cache Settings
   cache:
     enabled: true
     max_size: 1000
-    ttl: 3600  # 1 hour
-
-# Browser Settings
+    ttl: 3600
 browser:
-  default: "chromium"  # chromium, firefox, or webkit
+  default: chromium
   viewport:
     width: 1920
     height: 1080
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
-  headless: false  # Set to true for production
-
-# Course Platforms
+  user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
+    like Gecko) Chrome/121.0.0.0 Safari/537.36
+  headless: false
 platforms:
-  - name: "coursera"
-    base_url: "https://www.coursera.org"
-    selectors:
-      login_button: "button[data-track-component='login_redirect']"
-      email_input: "input[type='email']"
-      password_input: "input[type='password']"
-      submit_button: "button[type='submit']"
-      course_progress: ".course-progress"
-      video_player: ".video-player"
-      play_button: ".vjs-play-control"
-      pause_button: ".vjs-pause-control"
-      next_button: ".next-button"
-      quiz_container: ".quiz-container"
-      quiz_input: "input.quiz-answer"
-      quiz_submit: "button.submit-answer"
-      assignment_input: "textarea.assignment-text"
-      assignment_submit: "button.submit-assignment"
-      
-  - name: "udemy"
-    base_url: "https://www.udemy.com"
-    selectors:
-      login_button: "a[data-purpose='header-login']"
-      email_input: "#email--1"
-      password_input: "#form-group--3"
-      submit_button: "button[type='submit']"
-      course_progress: ".curriculum-item-link--progress--23Aaf"
-      video_player: ".video-player--video-wrapper--2kmnY"
-      play_button: ".vjs-play-control"
-      pause_button: ".vjs-pause-control"
-      next_button: "[data-purpose='go-to-next']"
-      quiz_container: ".mc-quiz-question--container--2MZCl"
-      quiz_input: "input[type='radio']"
-      quiz_submit: "button[data-purpose='submit-quiz-button']"
-      assignment_input: "textarea[data-purpose='assignment-text']"
-      assignment_submit: "button[data-purpose='submit-assignment']"
-
-# Screen Monitoring
+- name: coursera
+  base_url: https://www.coursera.org
+  selectors:
+    login_button: button[data-track-component='login_redirect']
+    email_input: input[type='email']
+    password_input: input[type='password']
+    submit_button: button[type='submit']
+    course_progress: .course-progress
+    video_player: .video-player
+    play_button: .vjs-play-control
+    pause_button: .vjs-pause-control
+    next_button: .next-button
+    quiz_container: .quiz-container
+    quiz_input: input.quiz-answer
+    quiz_submit: button.submit-answer
+    assignment_input: textarea.assignment-text
+    assignment_submit: button.submit-assignment
+- name: udemy
+  base_url: https://www.udemy.com
+  selectors:
+    login_button: a[data-purpose='header-login']
+    email_input: '#email--1'
+    password_input: '#form-group--3'
+    submit_button: button[type='submit']
+    course_progress: .curriculum-item-link--progress--23Aaf
+    video_player: .video-player--video-wrapper--2kmnY
+    play_button: .vjs-play-control
+    pause_button: .vjs-pause-control
+    next_button: '[data-purpose=''go-to-next'']'
+    quiz_container: .mc-quiz-question--container--2MZCl
+    quiz_input: input[type='radio']
+    quiz_submit: button[data-purpose='submit-quiz-button']
+    assignment_input: textarea[data-purpose='assignment-text']
+    assignment_submit: button[data-purpose='submit-assignment']
 monitor:
   enabled: true
-  capture_interval: 1.0  # Screen monitoring interval in seconds
+  capture_interval: 1.0
   regions:
-    - name: "video_player"
-      coordinates: [0, 0, 1920, 1080]
-    - name: "progress_bar"
-      coordinates: [0, 1000, 1920, 1020]
+  - name: video_player
+    coordinates:
+    - 0
+    - 0
+    - 1920
+    - 1080
+  - name: progress_bar
+    coordinates:
+    - 0
+    - 1000
+    - 1920
+    - 1020
   templates:
-    - name: "play_button"
-      path: "data/templates/play_button.png"
-      confidence: 0.8
-    - name: "pause_button"
-      path: "data/templates/pause_button.png"
-      confidence: 0.8
-    - name: "complete_button"
-      path: "data/templates/complete_button.png"
-      confidence: 0.9
-
-# Course Completion Rules
+  - name: play_button
+    path: data/templates/play_button.png
+    confidence: 0.8
+  - name: pause_button
+    path: data/templates/pause_button.png
+    confidence: 0.8
+  - name: complete_button
+    path: data/templates/complete_button.png
+    confidence: 0.9
 completion_rules:
   video_lectures:
-    - check_play_status: true
-    - minimum_watch_time: 0.9  # 90% of video length
-    - check_progress_bar: true
-  
+  - check_play_status: true
+  - minimum_watch_time: 0.9
+  - check_progress_bar: true
   quizzes:
-    - attempt_limit: 3
-    - use_ai_assistance: true
-    - save_answers: true
-  
+  - attempt_limit: 3
+  - use_ai_assistance: true
+  - save_answers: true
   assignments:
-    - use_ai_assistance: true
-    - plagiarism_check: true
-    - review_before_submit: true
-
-# Error Handling
+  - use_ai_assistance: true
+  - plagiarism_check: true
+  - review_before_submit: true
 error_handling:
   captcha:
-    - detection_method: "image_recognition"
-    - solver_service: "2captcha"  # Configure if needed
-  
+  - detection_method: image_recognition
+  - solver_service: 2captcha
   network:
-    - retry_count: 3
-    - backoff_factor: 2
-    - max_delay: 60
-  
+  - retry_count: 3
+  - backoff_factor: 2
+  - max_delay: 60
   session:
-    - auto_refresh: true
-    - max_session_time: 7200  # 2 hours
-
-# Logging Configuration
+  - auto_refresh: true
+  - max_session_time: 7200
 logging:
-  log_dir: "logs"
-  max_size: 10485760  # 10MB
+  log_dir: logs
+  max_size: 10485760
   backup_count: 5
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  date_format: "%Y-%m-%d %H:%M:%S"
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  date_format: '%Y-%m-%d %H:%M:%S'
   levels:
     console: INFO
     file: DEBUG
   rotation:
-    max_size: 10485760  # 10MB
+    max_size: 10485760
     max_days: 30
     compress: true
-    interval: 3600  # 1 hour
+    interval: 3600
     backup_count: 5
-
-# Certificate settings
 certificates:
   save_dir: data/certificates
   verify_text: true
   min_confidence: 0.8
   archive_dir: data/certificates/archive
   formats:
-    - png
-    - pdf
-
-# Course provider settings
+  - png
+  - pdf
 courses:
   default:
     selectors:
@@ -196,16 +176,16 @@ courses:
       email_field: '#email'
       password_field: '#password'
       certificate_container: '#certificate-container'
-      progress_bar: '.progress-bar'
-      video_player: '.video-player'
-      next_button: '.next-button'
-      submit_button: '.submit-button'
-      quiz_container: '.quiz-container'
+      progress_bar: .progress-bar
+      video_player: .video-player
+      next_button: .next-button
+      submit_button: .submit-button
+      quiz_container: .quiz-container
     timeouts:
-      navigation: 30000  # 30 seconds
-      element: 5000     # 5 seconds
-      certificate: 10000 # 10 seconds
-      video: 300000     # 5 minutes
+      navigation: 30000
+      element: 5000
+      certificate: 10000
+      video: 300000
     retry:
       max_attempts: 3
       backoff_factor: 2.0
@@ -213,4 +193,4 @@ courses:
     validation:
       required_score: 80
       min_video_progress: 90
-      completion_threshold: 100 
+      completion_threshold: 100

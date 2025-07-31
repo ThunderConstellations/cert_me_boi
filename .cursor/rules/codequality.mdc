@@ -56,7 +56,7 @@ Don't suggest updates or changes to files when there are no actual modifications
 
 ## Provide Real File Links
 
-Always provide links to the real files, not x.md.
+Always provide links to actual source code files (e.g., .py, .js, .ts, .jsx, .tsx, .html, .css, .json, .yaml, .toml, .md) that exist in the codebase, not placeholder references like "x.md" or generic file names. Links should point to specific, verifiable files that can be accessed and modified.
 
 ## No Current Implementation
 

@@ -6,14 +6,14 @@ Thank you for your interest in contributing to Cert Me Boi! This document provid
 
 ### Reporting Issues
 
-- Use the [GitHub Issues](https://github.com/ThunderConstellations/cert_me_boi/issues) page
+- Use the [GitHub Issues](./issues) page
 - Include detailed information about the problem
 - Provide steps to reproduce the issue
 - Include system information and error logs
 
 ### Feature Requests
 
-- Submit feature requests through [GitHub Issues](https://github.com/ThunderConstellations/cert_me_boi/issues)
+- Submit feature requests through [GitHub Issues](./issues)
 - Describe the feature and its benefits
 - Include use cases and examples
 
@@ -211,16 +211,16 @@ We use [Semantic Versioning](https://semver.org/):
 
 ### Release Steps
 
-1. Update version in `setup.py` and `__init__.py`
+1. Update version in the packaging configuration (`setup.py` and/or `pyproject.toml`) and `__init__.py`
 2. Update CHANGELOG.md
 3. Create a release tag
 4. Update documentation if needed
 
 ## 🆘 Getting Help
 
-- **Issues**: [GitHub Issues](https://github.com/ThunderConstellations/cert_me_boi/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/ThunderConstellations/cert_me_boi/discussions)
-- **Wiki**: [Project Wiki](https://github.com/ThunderConstellations/cert_me_boi/wiki)
+- **Issues**: [GitHub Issues](./issues)
+- **Discussions**: [GitHub Discussions](./discussions)
+- **Wiki**: [Project Wiki](./wiki)
 
 ## 📄 License
 

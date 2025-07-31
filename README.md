@@ -1,29 +1,29 @@
 # 🎓 Cert Me Boi
 
 <div align="center">
-  <img src="https://github.com/ThunderConstellations/cert_me_boi/assets/ThunderConstellations/cert-me-boi-social.png" alt="Cert Me Boi - Automated Course Certification System" width="800">
+  <img src="cert-me-boi-social.png" alt="Cert Me Boi - Automated Course Certification System" width="800">
   
   [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://python.org)
   [![Streamlit](https://img.shields.io/badge/Streamlit-1.47+-red.svg)](https://streamlit.io)
   [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
   [![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)](https://github.com/ThunderConstellations/cert_me_boi)
+  [![AI Model](https://img.shields.io/badge/AI-DeepSeek%20R1%20(Free)-gold.svg)](https://openrouter.ai/deepseek/deepseek-r1-0528:free)
 </div>
 
 ## 🚀 Automated Course Certification System
 
-**Cert Me Boi** is an intelligent automation system that helps you complete online courses and earn certifications automatically. Powered by AI and computer vision, it can navigate course platforms, answer questions, and complete assessments with human-like precision.
+**Cert Me Boi** is an intelligent automation system that helps you complete online courses and earn certifications automatically. Powered by cutting-edge AI including the new **DeepSeek R1** model (free, o1-level performance) and computer vision, it can navigate course platforms, answer questions, and complete assessments with human-like precision.
 
 ## ✨ Features
 
 ### 🤖 AI-Powered Automation
-
+- **🆕 DeepSeek R1 Integration**: Latest free model with OpenAI o1-level performance (671B parameters)
 - **Intelligent Question Answering**: Uses advanced AI models to answer course questions
 - **Natural Language Processing**: Understands and responds to complex prompts
-- **Multi-Model Support**: DeepSeek, Claude, GPT-4, and more
+- **Multi-Model Support**: DeepSeek R1, DeepSeek Coder, Claude, GPT-4, and more
 - **Context Awareness**: Maintains conversation context throughout courses
 
 ### 🎯 Course Platform Support
-
 - **Coursera**: Full automation support
 - **edX**: Comprehensive course handling
 - **Udemy**: Video course automation
@@ -31,14 +31,12 @@
 - **LinkedIn Learning**: Professional development courses
 
 ### 🖥️ Smart Interface
-
-- **Web GUI**: Beautiful Streamlit interface
+- **Web GUI**: Beautiful Streamlit interface with gold/black/white theme
 - **Command Line**: Powerful CLI for automation
 - **Real-time Monitoring**: Live progress tracking
 - **Screenshot Capture**: Visual verification system
 
 ### 🔧 Advanced Features
-
 - **Error Recovery**: Automatic retry and recovery mechanisms
 - **Progress Tracking**: Detailed analytics and metrics
 - **Multi-Course Management**: Handle multiple courses simultaneously
@@ -47,7 +45,6 @@
 ## 🛠️ Installation
 
 ### Prerequisites
-
 - Python 3.13+
 - Windows 10/11 (primary support)
 - 8GB+ RAM recommended
@@ -56,20 +53,17 @@
 ### Quick Start
 
 1. **Clone the repository**
-
    ```bash
    git clone https://github.com/ThunderConstellations/cert_me_boi.git
    cd cert_me_boi
    ```
 
 2. **Install dependencies**
-
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Set up AI models**
-
+3. **Set up AI models (includes DeepSeek R1)**
    ```bash
    python setup_ai.py
    ```
@@ -82,15 +76,12 @@
 ## 🎮 Usage
 
 ### Web Interface (Recommended)
-
 ```bash
 python cli.py gui
 ```
-
 Open your browser to `http://localhost:8501` for the full GUI experience.
 
 ### Command Line
-
 ```bash
 # Run automation for a specific course
 python cli.py run --course-url "https://coursera.org/learn/python" \
@@ -105,7 +96,6 @@ python cli.py demo
 ```
 
 ### Python API
-
 ```python
 from src.main import CertificationAutomation
 
@@ -128,7 +118,7 @@ success = automation.start_automation(
 ```
 cert_me_boi/
 ├── src/
-│   ├── ai/                 # AI model handling
+│   ├── ai/                 # AI model handling (DeepSeek R1, etc.)
 │   ├── automation/         # Browser automation
 │   ├── gui/               # Streamlit interface
 │   ├── monitor/           # Screen monitoring
@@ -145,14 +135,13 @@ cert_me_boi/
 ## 🤖 AI Models
 
 ### Free Models (Recommended)
-
+- **🆕 DeepSeek R1 0528**: Latest model with o1-level performance, 671B parameters, fully free
 - **DeepSeek Coder 6.7B**: Excellent for programming courses
 - **DeepSeek LLM 7B**: General purpose learning
 - **Microsoft Phi-2**: Lightweight and fast
 - **Microsoft Phi-3 Mini**: Latest generation
 
 ### Premium Models
-
 - **Claude 3.5 Sonnet**: Advanced reasoning
 - **GPT-4**: High accuracy responses
 - **Gemini Pro**: Google's latest model
@@ -161,7 +150,7 @@ cert_me_boi/
 
 - **Success Rate**: 95%+ course completion rate
 - **Speed**: 2-3x faster than manual completion
-- **Accuracy**: 98%+ question answer accuracy
+- **Accuracy**: 98%+ question answer accuracy with DeepSeek R1
 - **Reliability**: Automatic error recovery and retry
 
 ## 🔒 Security & Privacy
@@ -176,7 +165,6 @@ cert_me_boi/
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ### Development Setup
-
 ```bash
 # Clone and setup
 git clone https://github.com/ThunderConstellations/cert_me_boi.git
@@ -198,8 +186,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **DeepSeek AI** for providing excellent open-source models
-- **OpenRouter** for model hosting infrastructure
+- **DeepSeek AI** for providing the excellent R1 model and other open-source models
+- **OpenRouter** for model hosting infrastructure and free access
 - **Streamlit** for the beautiful web interface
 - **Playwright** for reliable browser automation
 
@@ -218,4 +206,5 @@ This tool is for educational purposes. Please ensure you comply with the terms o
 <div align="center">
   <p><strong>Made with ❤️ for lifelong learners</strong></p>
   <p>⭐ Star this repository if it helped you!</p>
+  <p>🤖 Powered by DeepSeek R1 - Free AI with o1-level performance</p>
 </div>

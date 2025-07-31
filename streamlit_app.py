@@ -24,6 +24,39 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 # Import real automation manager
 from src.gui_integration import automation_manager
 
+# Global ModelHandler instance for resource management
+_ai_handler = None
+
+def get_ai_handler():
+    """Get or create a ModelHandler instance with proper resource management"""
+    global _ai_handler
+    if _ai_handler is None:
+        try:
+            from src.ai.model_handler import ModelHandler
+            _ai_handler = ModelHandler()
+            # Log resource creation
+            import logging
+            logging.info("ModelHandler instance created and cached")
+        except Exception as e:
+            st.error(f"Failed to initialize AI handler: {str(e)}")
+            return None
+    return _ai_handler
+
+def cleanup_ai_handler():
+    """Clean up the global ModelHandler instance"""
+    global _ai_handler
+    if _ai_handler is not None:
+        try:
+            _ai_handler.cleanup()
+            _ai_handler = None
+            # Log successful cleanup
+            import logging
+            logging.info("ModelHandler instance cleaned up successfully")
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to cleanup AI handler: {str(e)}")
+            st.error(f"Failed to cleanup AI handler: {str(e)}")
+
 # Page configuration
 st.set_page_config(
     page_title="Cert Me Boi - Course Automation",
@@ -528,10 +561,14 @@ def show_settings():
     # AI Model Settings
     st.markdown('<h3 style="color: var(--gold);">🤖 AI Model Settings</h3>', unsafe_allow_html=True)
     
+    # Get AI handler with proper resource management
+    ai_handler = get_ai_handler()
+    if ai_handler is None:
+        st.error("Failed to initialize AI handler. Please check your configuration.")
+        return
+    
+    # Use context manager for better resource management
     try:
-        from src.ai.model_handler import ModelHandler
-        ai_handler = ModelHandler()
-        
         # Get available models
         available_models = ai_handler.get_available_models()
         
@@ -569,7 +606,7 @@ def show_settings():
                 all_models,
                 index=0 if all_models else None,
                 help="Free models are recommended for most users. Premium models require an OpenRouter API key."
-            ) if all_models else None            )
+            )
             
             col1, col2 = st.columns(2)
             with col1:
@@ -610,8 +647,64 @@ def show_settings():
         else:
             st.info("No API key - using free models only")
         
+        # Resource management section
+        st.markdown('<h4 style="color: var(--white);">Resource Management</h4>', unsafe_allow_html=True)
+        
+        # Show current AI handler status
+        handler_status = "🟢 Active" if _ai_handler is not None else "🔴 Inactive"
+        st.markdown(f"**AI Handler Status:** {handler_status}")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🧹 Cleanup AI Resources"):
+                cleanup_ai_handler()
+                st.success("AI resources cleaned up successfully!")
+        
+        with col2:
+            if st.button("🔄 Reinitialize AI Handler"):
+                cleanup_ai_handler()
+                new_handler = get_ai_handler()
+                if new_handler:
+                    st.success("AI handler reinitialized successfully!")
+                else:
+                    st.error("Failed to reinitialize AI handler")
+        
     except Exception as e:
-        st.error(f"Failed to load AI settings: {str(e)}")
+        import traceback
+        import sys
+        
+        # Get detailed error information
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        
+        # Create detailed error message
+        error_details = f"""
+        **AI Settings Loading Error**
+        
+        **Error Type:** `{type(e).__name__}`
+        **Error Message:** `{str(e)}`
+        
+        **Context:** Failed to initialize AI model handler or load model configurations.
+        
+        **Possible Causes:**
+        - Missing required dependencies (check if `src.ai.model_handler` exists)
+        - Configuration file issues
+        - Network connectivity problems (for API-based models)
+        - Permission issues accessing model files
+        
+        **Technical Details:**
+        ```
+        {traceback.format_exc()}
+        ```
+        
+        **Troubleshooting Steps:**
+        1. Check if all required packages are installed
+        2. Verify the `src/ai/` directory structure
+        3. Ensure proper file permissions
+        4. Check network connection if using API models
+        """
+        
+        st.error(error_details)
 
     # Browser Settings
     st.markdown('<h3 style="color: var(--gold);">🌐 Browser Settings</h3>', unsafe_allow_html=True)
@@ -694,4 +787,8 @@ def show_logs():
         st.info("No logs available yet")
 
 if __name__ == "__main__":
-    main() 
+    try:
+        main()
+    finally:
+        # Ensure cleanup of AI handler resources
+        cleanup_ai_handler() 
