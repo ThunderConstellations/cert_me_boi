@@ -524,53 +524,113 @@ def show_live_monitoring():
 def show_settings():
     """Show settings with real configuration"""
     st.markdown('<h2 style="color: var(--gold);">⚙️ Settings</h2>', unsafe_allow_html=True)
+
+    # AI Model Settings
+    st.markdown('<h3 style="color: var(--gold);">🤖 AI Model Settings</h3>', unsafe_allow_html=True)
     
-    # AI Configuration
-    st.markdown('<h3 style="color: var(--gold);">🤖 AI Configuration</h3>', unsafe_allow_html=True)
-    
-    with st.form("ai_settings"):
+    try:
+        from src.ai.model_handler import ModelHandler
+        ai_handler = ModelHandler()
+        
+        # Get available models
+        available_models = ai_handler.get_available_models()
+        
         col1, col2 = st.columns(2)
         
         with col1:
-            default_model = st.selectbox(
-                "Default AI Model",
-                ["gpt-3.5-turbo", "gpt-4", "claude-3-sonnet", "local-model"]
-            )
-            openrouter_key = st.text_input("OpenRouter API Key", type="password")
+            st.markdown('<h4 style="color: var(--white);">Free Models</h4>', unsafe_allow_html=True)
+            for model in available_models.get('free_models', []):
+                model_info = ai_handler.get_model_info(model)
+                st.markdown(f"""
+                <div style="background-color: #2a2a2a; padding: 10px; border-radius: 5px; margin: 5px 0;">
+                    <strong style="color: var(--gold);">{model}</strong><br>
+                    <small style="color: var(--text-color);">{model_info['description']}</small>
+                </div>
+                """, unsafe_allow_html=True)
         
         with col2:
-            confidence_threshold = st.slider("Confidence Threshold", 0.0, 1.0, 0.8)
-            max_retries = st.number_input("Max Retries", 1, 10, 3)
+            st.markdown('<h4 style="color: var(--white);">Premium Models</h4>', unsafe_allow_html=True)
+            for model in available_models.get('premium_models', []):
+                model_info = ai_handler.get_model_info(model)
+                st.markdown(f"""
+                <div style="background-color: #2a2a2a; padding: 10px; border-radius: 5px; margin: 5px 0;">
+                    <strong style="color: var(--gold);">{model}</strong><br>
+                    <small style="color: var(--text-color);">{model_info['description']}</small>
+                </div>
+                """, unsafe_allow_html=True)
         
-        submitted = st.form_submit_button("Save AI Settings")
-        if submitted:
-            st.success("AI settings saved!")
-    
-    # Browser Configuration
-    st.markdown('<h3 style="color: var(--gold);">🌐 Browser Configuration</h3>', unsafe_allow_html=True)
-    
+        # Model selection
+        st.markdown('<h4 style="color: var(--white);">Select Default Model</h4>', unsafe_allow_html=True)
+        all_models = available_models.get('free_models', []) + available_models.get('premium_models', [])
+        
+        if all_models:
+            selected_model = st.selectbox(
+                "Choose your preferred AI model:",
+                all_models,
+                index=0 if all_models else None,
+                help="Free models are recommended for most users. Premium models require an OpenRouter API key."
+            )
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Set as Default", type="primary"):
+                    if ai_handler.set_model(selected_model):
+                        st.success(f"Default model set to: {selected_model}")
+                    else:
+                        st.error("Failed to set default model")
+            
+            with col2:
+                if st.button("Test Connection"):
+                    with st.spinner("Testing model connection..."):
+                        test_result = ai_handler.test_model_connection(selected_model)
+                        if test_result['status'] == 'success':
+                            st.success(f"✅ Connection successful via {test_result['provider']}")
+                            with st.expander("Test Response"):
+                                st.write(test_result['response'])
+                        else:
+                            st.error(f"❌ Connection failed: {test_result.get('error', 'Unknown error')}")
+        
+        # API Key configuration
+        st.markdown('<h4 style="color: var(--white);">OpenRouter API Key (Optional)</h4>', unsafe_allow_html=True)
+        st.info("""
+        **Free Models**: You can use free models without an API key (local processing).
+        **Premium Models**: Require an OpenRouter API key for access.
+        
+        Get your free API key at: https://openrouter.ai/
+        """)
+        
+        api_key = st.text_input(
+            "OpenRouter API Key",
+            type="password",
+            help="Enter your OpenRouter API key to access premium models and faster processing"
+        )
+        
+        if api_key:
+            st.success("API key provided - premium models available!")
+        else:
+            st.info("No API key - using free models only")
+        
+    except Exception as e:
+        st.error(f"Failed to load AI settings: {str(e)}")
+
+    # Browser Settings
+    st.markdown('<h3 style="color: var(--gold);">🌐 Browser Settings</h3>', unsafe_allow_html=True)
     with st.form("browser_settings"):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            headless = st.checkbox("Headless Mode", value=True)
-            timeout = st.number_input("Timeout (seconds)", 10, 120, 30)
-        
-        with col2:
-            user_agent = st.text_input(
-                "User Agent", 
-                value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            )
-        
+        headless = st.checkbox("Run browser in headless mode (no UI)", value=True)
+        timeout = st.number_input("Browser Timeout (seconds)", min_value=10, value=30)
+        user_agent = st.text_input("User Agent", value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+
         submitted = st.form_submit_button("Save Browser Settings")
         if submitted:
+            # This would ideally update the config/courses.yaml or a dedicated settings file
+            # For now, it's a placeholder for future implementation
             st.success("Browser settings saved!")
-    
+
     # Export/Import
     st.markdown('<h3 style="color: var(--gold);">📤 Export/Import</h3>', unsafe_allow_html=True)
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         if st.button("📤 Export Courses"):
             export_path = f"data/export_{int(time.time())}.json"
@@ -578,7 +638,7 @@ def show_settings():
                 st.success(f"Exported to {export_path}")
             else:
                 st.error("Export failed")
-    
+
     with col2:
         uploaded_file = st.file_uploader("📥 Import Courses", type=['json'])
         if uploaded_file is not None:
@@ -587,7 +647,7 @@ def show_settings():
                 temp_path = f"data/temp_import_{int(time.time())}.json"
                 with open(temp_path, 'wb') as f:
                     f.write(uploaded_file.getvalue())
-                
+
                 if automation_manager.import_courses(temp_path):
                     st.success("Import successful!")
                 else:

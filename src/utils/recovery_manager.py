@@ -5,14 +5,13 @@ import yaml
 import time
 from pathlib import Path
 from .logger import logger, log_error_with_context
-from .error_handler import ErrorHandler, AutomationError
+from .error_handler import AutomationError
 
 class RecoveryManager:
     """Manages recovery operations for automation components"""
 
     def __init__(self, config_path: str = "config/error_handling.yaml"):
         self.config = self._load_config(config_path)
-        self.error_handler = ErrorHandler(config_path)
         self.browser_instance = None
         self.monitor_instance = None
         self.ai_instance = None

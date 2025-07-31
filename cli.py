@@ -14,9 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 # Import automation components
 from src.main import CertificationAutomation
-from src.utils.logger import get_logger
-
-logger = get_logger(__name__)
+from src.utils.logger import logger
 
 
 import getpass

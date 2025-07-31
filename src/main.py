@@ -6,13 +6,13 @@ from pathlib import Path
 from typing import Dict, Any
 import yaml
 from playwright.sync_api import sync_playwright
-from automation.browser import BrowserAutomation
-from automation.course_automation import CourseAutomation
-from monitor.screen_monitor import ScreenMonitor
-from utils.logger import logger
-from utils.error_handler import AutomationError
-from utils.recovery_manager import RecoveryManager
-from utils.metrics_collector import MetricsCollector
+from src.automation.browser import BrowserAutomation
+from src.automation.course_automation import CourseAutomation
+from src.monitor.screen_monitor import ScreenMonitor
+from src.utils.logger import logger
+from src.utils.error_handler import AutomationError
+from src.utils.recovery_manager import RecoveryManager
+from src.utils.metrics_collector import MetricsCollector
 
 def load_config(config_path: str) -> Dict[str, Any]:
     """Load configuration from YAML file"""
@@ -126,6 +126,66 @@ def process_course(
             error=str(e)
         )
         return False
+
+class CertificationAutomation:
+    """Main certification automation class for GUI integration"""
+    
+    def __init__(self, config_path: str = "config/courses.yaml"):
+        self.config = load_config(config_path)
+        self.browser = None
+        self.course = None
+        self.monitor = None
+        self.recovery = None
+        self.metrics = None
+        self._setup_components()
+    
+    def _setup_components(self):
+        """Set up automation components"""
+        try:
+            self.browser, self.course, self.monitor, self.recovery, self.metrics = setup_components(self.config)
+        except Exception as e:
+            logger.error(f"Failed to setup components: {e}", module="main")
+            raise
+    
+    def start_automation(self, platform: str, credentials: Dict[str, str]) -> bool:
+        """Start automation for a course"""
+        try:
+            url = credentials.get('course_url', '')
+            email = credentials.get('email', '')
+            password = credentials.get('password', '')
+            
+            logger.info(f"Starting automation for platform: {platform}", module="main")
+            
+            # Process the course
+            success = process_course(
+                self.browser,
+                self.course,
+                self.monitor,
+                url,
+                email,
+                password
+            )
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Automation failed: {e}", module="main")
+            return False
+    
+    def stop_automation(self):
+        """Stop automation"""
+        try:
+            logger.info("Stopping automation", module="main")
+            cleanup_components(self.browser, self.course, self.monitor, self.recovery, self.metrics)
+        except Exception as e:
+            logger.error(f"Failed to stop automation: {e}", module="main")
+    
+    def cleanup(self):
+        """Clean up resources"""
+        try:
+            self.stop_automation()
+        except Exception as e:
+            logger.error(f"Cleanup failed: {e}", module="main")
 
 def main():
     """Main entry point"""
