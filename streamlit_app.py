@@ -569,7 +569,7 @@ def show_settings():
                 all_models,
                 index=0 if all_models else None,
                 help="Free models are recommended for most users. Premium models require an OpenRouter API key."
-            )
+            ) if all_models else None            )
             
             col1, col2 = st.columns(2)
             with col1:
@@ -622,10 +622,8 @@ def show_settings():
 
         submitted = st.form_submit_button("Save Browser Settings")
         if submitted:
-            # This would ideally update the config/courses.yaml or a dedicated settings file
-            # For now, it's a placeholder for future implementation
-            st.success("Browser settings saved!")
-
+            # TODO: Implement settings persistence
+            st.info("Browser settings updated for this session only. Persistence will be implemented in a future update.")
     # Export/Import
     st.markdown('<h3 style="color: var(--gold);">📤 Export/Import</h3>', unsafe_allow_html=True)
 

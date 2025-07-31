@@ -6,9 +6,18 @@ Create social image for Cert Me Boi GitHub repository
 from PIL import Image, ImageDraw, ImageFont
 import os
 
-def create_social_image():
-    """Create a social image for the repository"""
+def create_social_image(output_path="cert-me-boi-social.png"):
+    """Create a social image for the repository.
     
+    Args:
+        output_path (str): Path where the image should be saved
+        
+    Returns:
+        str: Path to the created image file
+        
+    Raises:
+        IOError: If the image cannot be saved to the specified path
+    """
     # Create a 1200x630 image (GitHub social media recommended size)
     width, height = 1200, 630
     image = Image.new('RGB', (width, height), color='#0d1117')  # GitHub dark theme
@@ -17,11 +26,24 @@ def create_social_image():
     
     # Try to load a font, fallback to default if not available
     try:
-        # Try to use a system font
-        title_font = ImageFont.truetype("arial.ttf", 72)
-        subtitle_font = ImageFont.truetype("arial.ttf", 36)
-        body_font = ImageFont.truetype("arial.ttf", 24)
-    except:
+        # Try multiple font options for cross-platform compatibility
+        font_options = ["arial.ttf", "Arial.ttf", "DejaVuSans.ttf", "Liberation-Sans.ttf"]
+        font_path = None
+        for font in font_options:
+            try:
+                ImageFont.truetype(font, 12)  # Test if font exists
+                font_path = font
+                break
+            except (OSError, IOError):
+                continue
+
+        if font_path:
+            title_font = ImageFont.truetype(font_path, 72)
+            subtitle_font = ImageFont.truetype(font_path, 36)
+            body_font = ImageFont.truetype(font_path, 24)
+        else:
+            raise OSError("No suitable fonts found")
+    except (OSError, IOError):
         # Fallback to default font
         title_font = ImageFont.load_default()
         subtitle_font = ImageFont.load_default()
@@ -92,10 +114,12 @@ def create_social_image():
                    fill='#238636', outline='#238636')
     
     # Save the image
-    output_path = "cert-me-boi-social.png"
-    image.save(output_path, "PNG")
-    print(f"Social image created: {output_path}")
-    
+    try:
+        image.save(output_path, "PNG")
+        print(f"Social image created: {output_path}")
+    except IOError as e:
+        raise IOError(f"Failed to save image to {output_path}: {e}")
+
     return output_path
 
 if __name__ == "__main__":

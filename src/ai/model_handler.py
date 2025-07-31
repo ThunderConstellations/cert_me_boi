@@ -82,8 +82,9 @@ class ModelHandler:
             # Try OpenRouter first if API key is available
             if self.ai_config.get('api_key'):
                 logger.info("Attempting to use OpenRouter API", module="ai")
-                result = self.call_openrouter(prompt, self.ai_config['openrouter_models'][0])
-                if result:
+                openrouter_models = self.ai_config.get('openrouter_models', [])
+                model = openrouter_models[0] if openrouter_models else None
+                result = self.call_openrouter(prompt, model)                if result:
                     logger.info("Text generated successfully via OpenRouter", module="ai", length=len(result))
                     return result
                 else:

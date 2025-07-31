@@ -45,37 +45,48 @@
       "command": "npx",
       "args": [
         "tsx",
-        "C:/Users/Cringe Lord/Github/MCP-Servers/cross-platform-filesystem-mcp/src/index.ts"
-      ]
-    },
-    "github": {
-      "command": "docker",
+        "tsx",
+        "./servers/cross-platform-filesystem-mcp/src/index.ts"
+      ]    "github": {
+        "command": "docker",
+        "args": [
+          "run",
+          "-i",
+          "--rm",
+          "-e",
+          "GITHUB_PERSONAL_ACCESS_TOKEN",
+          "ghcr.io/github/github-mcp-server"
+        ],
+        "env": {
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github_token}"
+        }
+      },
+      "fetch": {
+        "command": "python",
+        "args": [
+          "-m",
+          "mcp_server_fetch"
+        ]
+      "coagand [""npx",y", "mcp-knowledge-graph", "--memory-path", "${env:MEMORY_PATH:-./data/memory.jsonl
+        }"]
+      },
       "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "GITHUB_PERSONAL_ACCESS_TOKEN",
-        "ghcr.io/github/github-mcp-server"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github_token}"
-      }
-    },
-    "fetch": {
-      "command": "python",
-      "args": ["-m", "mcp_server_fetch"]
-    },
-    "memory": {
-      "command": "npx",
-      "args": ["-y", "mcp-knowledge-graph", "--memory-path", "C:/Users/Cringe Lord/Github/MCP-Servers/memory.jsonl"]
-    },
-    "firecrawl": {
-      "command": "npx",
-      "args": ["-y", "firecrawl-mcp-server"],
-      "env": {
-        "FIRECRAWL_API_KEY": "YOUR_FIRECRAWL_API_KEY_HERE" // Get a free API key at https://firecrawl.dev/
-      }
-    }
+        "-y",  m p-kn wledge-graph", "-- e ory-p thr,s"${env:MEMORY_PATH:-./data/memory.jso:l}]
+      },
+      "-y",
+      "FIRECRAWL_API_KEY": "YOUR_FIRECRAWL_API_KEY_HERE"
+    }      "C:/Users/Cringe Lord/Github/MCP-Servers/memory.jsonl"
+  ]
+},
+"firecrawl": {
+  "command": "npx",
+  "args": [
+    "-y",
+    "firecrawl-mcp-server"
+  ],
+  "env": {
+    "FIRECRAWL_API_KEY": "${env:FIRECRAWL_API_KEY}"
   }
-} 
+}
+}
+}

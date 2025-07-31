@@ -1,12 +1,12 @@
 # 🎓 Cert Me Boi
 
 <div align="center">
-  <img src="https://github.com/yourusername/cert_me_boi/assets/youruserid/cert-me-boi-social.png" alt="Cert Me Boi - Automated Course Certification System" width="800">
+  <img src="https://github.com/ThunderConstellations/cert_me_boi/assets/ThunderConstellations/cert-me-boi-social.png" alt="Cert Me Boi - Automated Course Certification System" width="800">
   
   [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://python.org)
   [![Streamlit](https://img.shields.io/badge/Streamlit-1.47+-red.svg)](https://streamlit.io)
   [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-  [![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)](https://github.com/yourusername/cert_me_boi)
+  [![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)](https://github.com/ThunderConstellations/cert_me_boi)
 </div>
 
 ## 🚀 Automated Course Certification System
@@ -58,7 +58,7 @@
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/yourusername/cert_me_boi.git
+   git clone https://github.com/ThunderConstellations/cert_me_boi.git
    cd cert_me_boi
    ```
 
@@ -179,7 +179,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ```bash
 # Clone and setup
-git clone https://github.com/yourusername/cert_me_boi.git
+git clone https://github.com/ThunderConstellations/cert_me_boi.git
 cd cert_me_boi
 
 # Install development dependencies
@@ -205,9 +205,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/cert_me_boi/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/cert_me_boi/discussions)
-- **Wiki**: [Project Wiki](https://github.com/yourusername/cert_me_boi/wiki)
+- **Issues**: [GitHub Issues](https://github.com/ThunderConstellations/cert_me_boi/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ThunderConstellations/cert_me_boi/discussions)
+- **Wiki**: [Project Wiki](https://github.com/ThunderConstellations/cert_me_boi/wiki)
 
 ## ⚠️ Disclaimer
 
