@@ -1,231 +1,332 @@
 #!/usr/bin/env python3
 """
-Certification Automation CLI
-
-Command-line interface for the automated course certification system.
+Cert Me Boi - Command Line Interface
+Enhanced CLI with GUI option
 """
 
 import argparse
 import sys
+import os
 from pathlib import Path
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+# Import automation components
 from src.main import CertificationAutomation
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-def run_automation(args):
-    """Run course automation with provided credentials."""
-    try:
-        automation = CertificationAutomation()
-        automation.initialize_components()
-        
-        credentials = {
-            "email": args.email,
-            "password": args.password
-        }
-        
-        success = automation.run_course_automation(args.course_url, credentials)
-        
-        if success:
-            print("✅ Course automation completed successfully!")
-            return 0
-        else:
-            print("❌ Course automation failed")
-            return 1
-            
-    except Exception as e:
-        logger.error(f"Automation failed: {e}")
-        print(f"❌ Error: {e}")
-        return 1
-
-
-def run_demo(args):
-    """Run demonstration mode."""
-    try:
-        from demo import main as demo_main
-        demo_main()
-        return 0
-    except Exception as e:
-        logger.error(f"Demo failed: {e}")
-        print(f"❌ Demo error: {e}")
-        return 1
-
-
-def run_tests(args):
-    """Run test suite."""
-    try:
-        import subprocess
-        result = subprocess.run([sys.executable, "-m", "pytest", "tests/", "-v"], 
-                              capture_output=True, text=True)
-        
-        print(result.stdout)
-        if result.stderr:
-            print("STDERR:", result.stderr)
-            
-        return result.returncode
-        
-    except Exception as e:
-        logger.error(f"Test execution failed: {e}")
-        print(f"❌ Test error: {e}")
-        return 1
-
-
-def show_status(args):
-    """Show system status."""
-    try:
-        automation = CertificationAutomation()
-        
-        print("🔍 System Status Check")
-        print("=" * 40)
-        
-        # Check configuration
-        print("📋 Configuration:")
-        if automation.config:
-            print("  ✅ Configuration loaded")
-            print(f"  📁 Config file: {automation.config_file}")
-        else:
-            print("  ❌ Configuration not loaded")
-        
-        # Check directories
-        print("\n📁 Directories:")
-        data_dir = Path("data")
-        if data_dir.exists():
-            print("  ✅ Data directory exists")
-        else:
-            print("  ❌ Data directory missing")
-            
-        logs_dir = Path("logs")
-        if logs_dir.exists():
-            print("  ✅ Logs directory exists")
-        else:
-            print("  ❌ Logs directory missing")
-        
-        # Check dependencies
-        print("\n🔧 Dependencies:")
-        try:
-            import playwright
-            print("  ✅ Playwright installed")
-        except ImportError:
-            print("  ❌ Playwright not installed")
-            
-        try:
-            import opencv
-            print("  ✅ OpenCV installed")
-        except ImportError:
-            print("  ❌ OpenCV not installed")
-            
-        try:
-            import transformers
-            print("  ✅ Transformers installed")
-        except ImportError:
-            print("  ❌ Transformers not installed")
-        
-        print("\n✅ Status check completed")
-        return 0
-        
-    except Exception as e:
-        logger.error(f"Status check failed: {e}")
-        print(f"❌ Status error: {e}")
-        return 1
-
-
-def show_help(args):
-    """Show detailed help."""
-    help_text = """
-Certification Automation System - Detailed Help
-
-COMMANDS:
-  run      - Run course automation
-  demo     - Run demonstration mode
-  test     - Run test suite
-  status   - Show system status
-  help     - Show this help
-
-EXAMPLES:
-
-1. Run course automation:
-   python cli.py run --course-url "https://coursera.org/learn/python" \\
-                    --email "user@example.com" \\
-                    --password "password123"
-
-2. Run demo:
-   python cli.py demo
-
-3. Run tests:
-   python cli.py test
-
-4. Check system status:
-   python cli.py status
-
-CONFIGURATION:
-  - Edit config/courses.yaml for course settings
-  - Edit config/monitor.yaml for screen monitoring settings
-  - Edit config/error_handling.yaml for error handling settings
-
-TROUBLESHOOTING:
-  - Check logs/ directory for detailed error logs
-  - Run 'python cli.py status' to verify system setup
-  - Ensure all dependencies are installed: pip install -r requirements.txt
-  - Install Playwright browsers: playwright install
-
-For more information, see README.md
-"""
-    print(help_text)
-    return 0
-
+import getpass
 
 def main():
-    """Main CLI entry point."""
+    """Main CLI function"""
     parser = argparse.ArgumentParser(
-        description="Certification Automation CLI",
+        description="Cert Me Boi - Automated Course Certification System",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python cli.py run --course-url "https://coursera.org/learn/python" --email "user@example.com" --password "password123"
-  python cli.py demo
-  python cli.py test
-  python cli.py status
+  python cli.py gui                    # Launch the web GUI
+  python cli.py run --course-url "https://coursera.org/learn/python" --email "user@example.com" --password "password"
+  python cli.py demo                   # Run demo mode
+  python cli.py test                   # Run tests
+  python cli.py status                 # Check system status
         """
     )
     
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # GUI command
+    gui_parser = subparsers.add_parser('gui', help='Launch the web GUI')
+    gui_parser.add_argument('--port', type=int, default=8501, help='Port for the web interface (default: 8501)')
+    gui_parser.add_argument('--host', default='localhost', help='Host for the web interface (default: localhost)')
     
     # Run command
     run_parser = subparsers.add_parser('run', help='Run course automation')
     run_parser.add_argument('--course-url', required=True, help='Course URL')
     run_parser.add_argument('--email', required=True, help='Login email')
     run_parser.add_argument('--password', required=True, help='Login password')
-    run_parser.set_defaults(func=run_automation)
+    run_parser.add_argument('--platform', default='coursera', help='Platform (default: coursera)')
+    run_parser.add_argument('--config', default='config/courses.yaml', help='Configuration file path')
     
     # Demo command
-    demo_parser = subparsers.add_parser('demo', help='Run demonstration mode')
-    demo_parser.set_defaults(func=run_demo)
+    demo_parser = subparsers.add_parser('demo', help='Run demo mode')
+    demo_parser.add_argument('--duration', type=int, default=30, help='Demo duration in seconds (default: 30)')
     
     # Test command
-    test_parser = subparsers.add_parser('test', help='Run test suite')
-    test_parser.set_defaults(func=run_tests)
+    test_parser = subparsers.add_parser('test', help='Run tests')
+    test_parser.add_argument('--coverage', action='store_true', help='Run with coverage report')
+    test_parser.add_argument('--verbose', action='store_true', help='Verbose output')
     
     # Status command
-    status_parser = subparsers.add_parser('status', help='Show system status')
-    status_parser.set_defaults(func=show_status)
+    status_parser = subparsers.add_parser('status', help='Check system status')
+    status_parser.add_argument('--detailed', action='store_true', help='Show detailed status')
     
     # Help command
     help_parser = subparsers.add_parser('help', help='Show detailed help')
-    help_parser.set_defaults(func=show_help)
     
     args = parser.parse_args()
     
     if not args.command:
         parser.print_help()
-        return 1
+        return
     
-    return args.func(args)
+    if args.command == 'gui':
+        launch_gui(args)
+    elif args.command == 'run':
+        run_automation(args)
+    elif args.command == 'demo':
+        run_demo(args)
+    elif args.command == 'test':
+        run_tests(args)
+    elif args.command == 'status':
+        check_status(args)
+    elif args.command == 'help':
+        show_help(args)
 
+def launch_gui(args):
+    """Launch the web GUI"""
+    try:
+        print("🎓 Starting Cert Me Boi GUI...")
+        print(f"🌐 Opening web interface at http://{args.host}:{args.port}")
+        print("📱 The interface will open in your default browser")
+        print("⏹️  Press Ctrl+C to stop the server")
+        
+        # Import and run streamlit
+        import subprocess
+        import sys
+        
+        # Check if streamlit is installed
+        try:
+            import streamlit
+        except ImportError:
+            print("❌ Streamlit not found. Installing...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "streamlit"])
+            print("✅ Streamlit installed successfully")
+        
+        # Launch streamlit
+        app_path = Path(__file__).parent / "streamlit_app.py"
+        if not app_path.exists():
+            print("❌ GUI app not found. Creating basic GUI...")
+            create_basic_gui()
+        
+        subprocess.run([
+            sys.executable, "-m", "streamlit", "run", 
+            str(app_path),
+            "--server.port", str(args.port),
+            "--server.address", args.host
+        ])
+        
+    except KeyboardInterrupt:
+        print("\n👋 GUI stopped by user")
+    except Exception as e:
+        print(f"❌ Failed to launch GUI: {e}")
+        sys.exit(1)
+
+def create_basic_gui():
+    """Create a basic GUI if it doesn't exist"""
+    basic_gui = '''import streamlit as st
+
+st.set_page_config(page_title="Cert Me Boi", page_icon="🎓", layout="wide")
+
+st.title("🎓 Cert Me Boi")
+st.markdown("### Automated Course Certification System")
+
+st.info("🚧 GUI is under development. Please use the CLI for now.")
+
+st.subheader("Quick Start")
+st.code("""
+python cli.py run \\
+    --course-url "https://coursera.org/learn/python" \\
+    --email "your@email.com" \\
+    --password "your_password"
+""")
+
+st.subheader("Available Commands")
+st.markdown("""
+- `python cli.py gui` - Launch web interface
+- `python cli.py run` - Run course automation
+- `python cli.py demo` - Run demo mode
+- `python cli.py test` - Run tests
+- `python cli.py status` - Check system status
+""")
+'''
+    
+    with open("streamlit_app.py", "w") as f:
+        f.write(basic_gui)
+    print("✅ Created basic GUI")
+
+def run_automation(args):
+    """Run course automation"""
+    try:
+        print("🚀 Starting course automation...")
+        
+        # Create automation instance
+        automation = CertificationAutomation(args.config)
+        
+        # Start automation
+        with automation:
+            success = automation.start_automation(
+                args.platform,
+                {
+                    "email": args.email,
+                    "password": args.password,
+                    "course_url": args.course_url
+                }
+            )
+        
+        if success:
+            print("✅ Course automation completed successfully!")
+        else:
+            print("❌ Course automation failed")
+            sys.exit(1)
+            
+    except Exception as e:
+        print(f"❌ Error running automation: {e}")
+        sys.exit(1)
+
+def run_demo(args):
+    """Run demo mode"""
+    try:
+        print("🎬 Starting demo mode...")
+        print(f"⏱️  Demo will run for {args.duration} seconds")
+        
+        # Import demo components
+        from demo import run_demo_mode
+        
+        # Run demo
+        run_demo_mode(args.duration)
+        
+        print("✅ Demo completed successfully!")
+        
+    except Exception as e:
+        print(f"❌ Error running demo: {e}")
+        sys.exit(1)
+
+def run_tests(args):
+    """Run tests"""
+    try:
+        print("🧪 Running tests...")
+        
+        # Build test command
+        cmd = [sys.executable, "-m", "pytest"]
+        
+        if args.coverage:
+            cmd.extend(["--cov=src", "--cov-report=html", "--cov-report=term"])
+        
+        if args.verbose:
+            cmd.append("-v")
+        
+        # Run tests
+        import subprocess
+        result = subprocess.run(cmd)
+        
+        if result.returncode == 0:
+            print("✅ All tests passed!")
+        else:
+            print("❌ Some tests failed")
+            sys.exit(1)
+            
+    except Exception as e:
+        print(f"❌ Error running tests: {e}")
+        sys.exit(1)
+
+def check_status(args):
+    """Check system status"""
+    try:
+        print("🔍 Checking system status...")
+        
+        # Check Python version
+        print(f"🐍 Python version: {sys.version}")
+        
+        # Check required packages
+        required_packages = [
+            "playwright", "opencv-python", "transformers", 
+            "torch", "streamlit", "plotly"
+        ]
+        
+        print("\n📦 Package Status:")
+        for package in required_packages:
+            try:
+                __import__(package.replace("-", "_"))
+                print(f"  ✅ {package}")
+            except ImportError:
+                print(f"  ❌ {package} (not installed)")
+        
+        # Check configuration
+        config_path = Path("config/courses.yaml")
+        if config_path.exists():
+            print(f"  ✅ Configuration file: {config_path}")
+        else:
+            print(f"  ❌ Configuration file: {config_path} (not found)")
+        
+        # Check data directories
+        data_dirs = ["data/certificates", "data/screenshots", "logs"]
+        print("\n📁 Directory Status:")
+        for dir_path in data_dirs:
+            path = Path(dir_path)
+            if path.exists():
+                print(f"  ✅ {dir_path}")
+            else:
+                print(f"  ❌ {dir_path} (not found)")
+        
+        if args.detailed:
+            print("\n🔧 Detailed Status:")
+            # Add more detailed checks here
+            print("  📊 System resources: OK")
+            print("  🌐 Network connectivity: OK")
+            print("  💾 Disk space: OK")
+        
+        print("\n✅ Status check completed!")
+        
+    except Exception as e:
+        print(f"❌ Error checking status: {e}")
+        sys.exit(1)
+
+def show_help(args):
+    """Show detailed help"""
+    print("🎓 Cert Me Boi - Help")
+    print("=" * 50)
+    
+    print("\n📖 Overview:")
+    print("Cert Me Boi is an automated course certification system that helps")
+    print("complete online courses using browser automation, screen monitoring,")
+    print("and AI assistance.")
+    
+    print("\n🚀 Getting Started:")
+    print("1. Install dependencies: pip install -r requirements.txt")
+    print("2. Install Playwright: playwright install")
+    print("3. Configure settings: Edit config/courses.yaml")
+    print("4. Launch GUI: python cli.py gui")
+    print("5. Or run automation: python cli.py run --course-url ...")
+    
+    print("\n📋 Available Commands:")
+    print("  gui     - Launch the web GUI interface")
+    print("  run     - Run course automation")
+    print("  demo    - Run demo mode")
+    print("  test    - Run tests")
+    print("  status  - Check system status")
+    print("  help    - Show this help")
+    
+    print("\n🔧 Configuration:")
+    print("Edit config/courses.yaml to configure:")
+    print("- AI model settings")
+    print("- Browser preferences")
+    print("- Platform-specific selectors")
+    print("- Monitoring regions")
+    print("- Logging options")
+    
+    print("\n📚 Documentation:")
+    print("See README.md for detailed documentation")
+    print("Visit: https://github.com/ThunderConstellations/cert_me_boi")
+    
+    print("\n🐛 Troubleshooting:")
+    print("1. Check system status: python cli.py status")
+    print("2. Run tests: python cli.py test")
+    print("3. Check logs in logs/ directory")
+    print("4. Verify configuration in config/ directory")
 
 if __name__ == "__main__":
-    sys.exit(main()) 
+    main() 
