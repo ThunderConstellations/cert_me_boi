@@ -1,1 +1,84 @@
- 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# Data files
+data/screenshots/
+data/certificates/
+data/courses/
+
+# Test results
+test_results.json
+htmlcov/
+.coverage
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large files
+*.exe
+rustup-init.exe
+
+# Temporary files
+*.tmp
+*.temp
+
+# Configuration with sensitive data
+config/local.yaml
+config/secrets.yaml
+
+# AI model cache
+.cache/
+models/
+*.safetensors
+*.bin
+
+# Browser data
+browser_data/
+playwright-report/
+test-results/
+
+# Documentation generation
+.specstory/ 
