@@ -39,7 +39,8 @@ class RealAutomationManager:
             self.callbacks = {}
             self.metrics.start_collection()
         except Exception as e:
-            logger.error(f"Failed to start metrics collection: {e}", module="gui_integration")
+            logger.error(
+                f"Failed to start metrics collection: {e}", module="gui_integration")
 
         # Thread control events
         self.automation_threads = {}  # course_id -> thread
@@ -343,7 +344,10 @@ class RealAutomationManager:
                 'statistics': self.get_statistics()
             }
             with open(filepath, 'w') as f:
-                json.dump(data, f, indent=2, default=str)        """Pause automation for a specific course"""
+                json.dump(data, f, indent=2, default=str)
+
+    def pause_course(self, course_id: str) -> bool:
+        """Pause automation for a specific course"""
         try:
             if course_id not in self.courses:
                 return False
@@ -654,12 +658,6 @@ class RealAutomationManager:
 
 # Global instance
 automation_manager = RealAutomationManager()
-
-            self.metrics.stop_collection()
-            self.log_event("INFO", "Automation manager cleanup completed")
-
-        except Exception as e:
-            self.log_event("ERROR", f"Failed to cleanup: {e}")
 
 
 # Global instance

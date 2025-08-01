@@ -51,9 +51,17 @@ Topics help people discover your repository. Here are recommended topics for cer
 
 ### 🎨 Complete Topics List (Copy & Paste)
 
+**⚠️ GitHub Limit: Maximum 20 topics per repository**
+
 ```
-automation, certification, education, ai-powered, course-automation, e-learning, python, streamlit, playwright, computer-vision, machine-learning, deepseek, openrouter, coursera, edx, udemy, pluralsight, linkedin-learning, web-automation, gui-application, cli-tool, screenshot-capture, progress-tracking
+automation, certification, education, ai-powered, course-automation, e-learning, python, streamlit, playwright, computer-vision, machine-learning, deepseek, openrouter, coursera, edx, udemy, web-automation, gui-application, cli-tool, progress-tracking
 ```
+
+**Optional Topics** (can replace less relevant ones above):
+
+- `pluralsight`
+- `linkedin-learning`
+- `screenshot-capture`
 
 ## 🌍 Repository Visibility & Settings
 

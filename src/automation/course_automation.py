@@ -1,334 +1,542 @@
 """Course automation module"""
 
-from typing import Dict, Any, Optional, List, Tuple
-from pathlib import Path
+import asyncio
+import logging
+import time
+from typing import Dict, Any, Optional, List
+from playwright.async_api import Page, Browser
+from ..ai.model_handler import ModelHandler
+from ..monitor.screen_monitor import ScreenMonitor
 import yaml
-from playwright.sync_api import Page, expect
-from ..utils.logger import logger, log_execution_time
-from ..utils.error_handler import AutomationError, retry_on_error
+import os
+
+logger = logging.getLogger(__name__)
+
 
 class CourseAutomation:
-    """Handles course-specific automation tasks"""
-    
+    """Enhanced automation system supporting 25+ certification platforms"""
+
     def __init__(self, config_path: str = "config/courses.yaml"):
         self.config = self._load_config(config_path)
-        self.page: Optional[Page] = None
-        self.certificate_dir = Path(self.config['certificates']['save_dir'])
-        self.certificate_dir.mkdir(parents=True, exist_ok=True)
-        self.screenshot_dir = Path(self.config['settings']['screenshot_dir'])
-        self.screenshot_dir.mkdir(parents=True, exist_ok=True)
-        logger.info("Course automation initialized", module="course_automation")
+        self.model_handler = ModelHandler()
+        self.screen_monitor = ScreenMonitor()
+        self.current_platform = None
+
+        # Platform-specific handlers
+        self.platform_handlers = {
+            'freecodecamp': self._handle_freecodecamp,
+            'hackerrank': self._handle_hackerrank,
+            'harvard_cs50': self._handle_harvard_cs50,
+            'huggingface': self._handle_huggingface,
+            'kaggle': self._handle_kaggle,
+            'university_helsinki': self._handle_university_helsinki,
+            'upgrad': self._handle_upgrad,
+            'ibm_skills': self._handle_ibm_skills,
+            'matlab_onramp': self._handle_matlab_onramp,
+            'google_skillshop': self._handle_google_skillshop,
+            'microsoft_learn': self._handle_microsoft_learn,
+            'cisco_netacad': self._handle_cisco_netacad,
+            'saylor_academy': self._handle_saylor_academy,
+            'stepik': self._handle_stepik,
+            'complexity_explorer': self._handle_complexity_explorer,
+            'hubspot_academy': self._handle_hubspot_academy,
+            'wolfram_u': self._handle_wolfram_u,
+            'semrush_academy': self._handle_semrush_academy,
+            'codesignal': self._handle_codesignal,
+            'open_university': self._handle_open_university,
+            'stanford_medicine': self._handle_stanford_medicine,
+            'edraak': self._handle_edraak,
+            'openhpi': self._handle_openhpi,
+            'edx': self._handle_edx,
+            'coursera': self._handle_coursera,
+            'udemy': self._handle_udemy
+        }
 
     def _load_config(self, config_path: str) -> Dict[str, Any]:
-        """Load course configuration"""
+        """Load configuration from YAML file"""
         try:
-            with open(config_path, 'r') as f:
-                return yaml.safe_load(f)
+            with open(config_path, 'r') as file:
+                return yaml.safe_load(file)
         except Exception as e:
-            logger.error(
-                "Failed to load course config",
-                module="course_automation",
-                error=str(e)
-            )
-            return {
-                'settings': {
-                    'screenshot_dir': 'data/screenshots',
-                    'delay_between_actions': 2
-                },
-                'certificates': {
-                    'save_dir': 'data/certificates',
-                    'verify_text': True,
-                    'min_confidence': 0.8
-                },
-                'courses': {
-                    'default': {
-                        'selectors': {
-                            'login_button': '#login-button',
-                            'email_field': '#email',
-                            'password_field': '#password',
-                            'certificate_container': '#certificate-container',
-                            'progress_bar': '.progress-bar',
-                            'video_player': '.video-player'
-                        },
-                        'timeouts': {
-                            'navigation': 30000,
-                            'element': 5000,
-                            'certificate': 10000
-                        }
-                    }
-                }
-            }
+            logger.error(f"Failed to load config: {e}")
+            return {}
 
-    def set_page(self, page: Page) -> None:
-        """Set the Playwright page instance"""
-        self.page = page
-
-    @retry_on_error(max_attempts=3)
-    @log_execution_time
-    def login_to_course(self, url: str, email: str, password: str) -> bool:
-        """Log in to course provider"""
+    async def start_automation(self, page: Page, platform: str, course_url: str, credentials: Dict[str, str]) -> bool:
+        """Start automation for a specific platform"""
         try:
-            if not self.page:
-                raise AutomationError("Page not initialized")
+            self.current_platform = platform
+            logger.info(f"Starting automation for {platform}")
 
-            # Navigate to login page
-            self.page.goto(url)
-            
-            # Get selectors from config
-            selectors = self.config['courses']['default']['selectors']
-            
-            # Fill login form
-            self.page.fill(selectors['email_field'], email)
-            self.page.fill(selectors['password_field'], password)
-            
-            # Take screenshot before login
-            self.take_screenshot("login_form")
-            
+            # Navigate to course URL
+            await page.goto(course_url)
+            await page.wait_for_load_state('networkidle')
+
+            # Perform login if credentials provided
+            if credentials:
+                await self._login(page, platform, credentials)
+
+            # Use platform-specific handler
+            if platform in self.platform_handlers:
+                return await self.platform_handlers[platform](page, course_url)
+            else:
+                return await self._handle_generic_platform(page, course_url)
+
+        except Exception as e:
+            logger.error(f"Automation failed for {platform}: {e}")
+            return False
+
+    async def _login(self, page: Page, platform: str, credentials: Dict[str, str]) -> bool:
+        """Handle login for any platform"""
+        try:
+            platform_config = self._get_platform_config(platform)
+            selectors = platform_config.get('selectors', {})
+
             # Click login button
-            self.page.click(selectors['login_button'])
-            
-            # Wait for navigation
-            self.page.wait_for_load_state('networkidle')
-            
-            # Verify successful login
-            expect(self.page.locator(selectors['login_button'])).not_to_be_visible()
-            
-            logger.info(
-                "Successfully logged in to course",
-                module="course_automation",
-                url=url
-            )
+            login_btn = selectors.get('login_button')
+            if login_btn:
+                await page.click(login_btn)
+                await page.wait_for_timeout(2000)
+
+            # Fill credentials
+            email_selector = selectors.get('email_input')
+            password_selector = selectors.get('password_input')
+            submit_selector = selectors.get('submit_button')
+
+            if email_selector:
+                await page.fill(email_selector, credentials.get('email', ''))
+            if password_selector:
+                await page.fill(password_selector, credentials.get('password', ''))
+            if submit_selector:
+                await page.click(submit_selector)
+                await page.wait_for_load_state('networkidle')
+
+            logger.info(f"Login completed for {platform}")
             return True
+
         except Exception as e:
-            logger.error(
-                "Failed to log in to course",
-                module="course_automation",
-                url=url,
-                error=str(e)
-            )
+            logger.error(f"Login failed for {platform}: {e}")
             return False
 
-    @retry_on_error(max_attempts=3)
-    @log_execution_time
-    def check_course_progress(self) -> float:
-        """Check course progress percentage"""
+    def _get_platform_config(self, platform: str) -> Dict[str, Any]:
+        """Get configuration for specific platform"""
+        platforms = self.config.get('platforms', [])
+        for p in platforms:
+            if p.get('name') == platform:
+                return p
+        return {}
+
+    # Platform-specific automation handlers
+
+    async def _handle_freecodecamp(self, page: Page, course_url: str) -> bool:
+        """Handle FreeCodeCamp automation"""
         try:
-            if not self.page:
-                raise AutomationError("Page not initialized")
+            logger.info("Starting FreeCodeCamp automation")
 
-            # Get progress bar selector
-            progress_selector = self.config['courses']['default']['selectors']['progress_bar']
-            
-            # Wait for progress bar
-            progress_bar = self.page.wait_for_selector(progress_selector)
-            if not progress_bar:
-                return 0.0
-            
-            # Take screenshot of progress bar
-            self.take_element_screenshot(progress_selector, "progress_bar")
-            
-            # Get progress value
-            progress_text = progress_bar.get_attribute('aria-valuenow')
-            progress = float(progress_text) if progress_text else 0.0
-            
-            logger.info(
-                "Course progress checked",
-                module="course_automation",
-                progress=progress
-            )
-            return progress
+            while True:
+                # Wait for challenge to load
+                await page.wait_for_selector('.challenge-instructions', timeout=10000)
+
+                # Get challenge instructions
+                instructions = await page.text_content('.challenge-instructions')
+
+                # Use AI to solve coding challenge
+                if await page.is_visible('.monaco-editor'):
+                    # Get current code
+                    current_code = await page.evaluate('() => window.editor?.getValue() || ""')
+
+                    # Generate solution using AI
+                    solution = await self.model_handler.generate_code_solution(instructions, current_code)
+
+                    # Input solution
+                    await page.evaluate(f'() => window.editor?.setValue(`{solution}`)')
+
+                    # Run tests
+                    await page.click('#test-button')
+                    await page.wait_for_timeout(3000)
+
+                    # Submit if tests pass
+                    if await page.is_visible('#submit-button:not([disabled])'):
+                        await page.click('#submit-button')
+                        await page.wait_for_timeout(2000)
+
+                # Check if completed
+                if await page.is_visible('.challenge-completed'):
+                    break
+
+                # Move to next challenge
+                if await page.is_visible('.btn-primary'):
+                    await page.click('.btn-primary')
+                    await page.wait_for_timeout(2000)
+                else:
+                    break
+
+            return True
+
         except Exception as e:
-            logger.error(
-                "Failed to check course progress",
-                module="course_automation",
-                error=str(e)
-            )
-            return 0.0
-
-    @retry_on_error(max_attempts=3)
-    @log_execution_time
-    def download_certificate(self, course_id: str) -> Optional[str]:
-        """Download course completion certificate"""
-        try:
-            if not self.page:
-                raise AutomationError("Page not initialized")
-
-            # Get certificate selector
-            cert_selector = self.config['courses']['default']['selectors']['certificate_container']
-            
-            # Wait for certificate
-            self.page.wait_for_selector(cert_selector)
-            
-            # Take screenshot before download
-            self.take_element_screenshot(cert_selector, "certificate_preview")
-            
-            # Save certificate screenshot
-            cert_path = self.certificate_dir / f"{course_id}_certificate.png"
-            self.page.screenshot(path=str(cert_path))
-            
-            logger.info(
-                "Certificate downloaded",
-                module="course_automation",
-                course_id=course_id,
-                path=str(cert_path)
-            )
-            return str(cert_path)
-        except Exception as e:
-            logger.error(
-                "Failed to download certificate",
-                module="course_automation",
-                course_id=course_id,
-                error=str(e)
-            )
-            return None
-
-    @retry_on_error(max_attempts=3)
-    @log_execution_time
-    def verify_video_completion(self, video_url: str) -> bool:
-        """Verify video completion status"""
-        try:
-            if not self.page:
-                raise AutomationError("Page not initialized")
-
-            # Navigate to video page
-            self.page.goto(video_url)
-            
-            # Get video player selector
-            video_selector = self.config['courses']['default']['selectors']['video_player']
-            
-            # Wait for video player
-            video = self.page.wait_for_selector(video_selector)
-            if not video:
-                return False
-            
-            # Take screenshot of video player
-            self.take_element_screenshot(video_selector, "video_player")
-            
-            # Check if video is completed
-            completed = video.evaluate('video => video.ended')
-            
-            logger.info(
-                "Video completion verified",
-                module="course_automation",
-                url=video_url,
-                completed=completed
-            )
-            return completed
-        except Exception as e:
-            logger.error(
-                "Failed to verify video completion",
-                module="course_automation",
-                url=video_url,
-                error=str(e)
-            )
+            logger.error(f"FreeCodeCamp automation failed: {e}")
             return False
 
-    def take_screenshot(self, name: str, full_page: bool = False) -> Optional[str]:
-        """Take a screenshot of the current page"""
+    async def _handle_hackerrank(self, page: Page, course_url: str) -> bool:
+        """Handle HackerRank skills verification"""
         try:
-            if not self.page:
-                raise AutomationError("Page not initialized")
-            
-            screenshot_path = self.screenshot_dir / f"{name}_{self.page.url.split('/')[-1]}.png"
-            self.page.screenshot(path=str(screenshot_path), full_page=full_page)
-            
-            logger.info(
-                "Screenshot taken",
-                module="course_automation",
-                name=name,
-                path=str(screenshot_path)
-            )
-            return str(screenshot_path)
-        except Exception as e:
-            logger.error(
-                "Failed to take screenshot",
-                module="course_automation",
-                name=name,
-                error=str(e)
-            )
-            return None
+            logger.info("Starting HackerRank automation")
 
-    def take_element_screenshot(self, selector: str, name: str) -> Optional[str]:
-        """Take a screenshot of a specific element"""
-        try:
-            if not self.page:
-                raise AutomationError("Page not initialized")
-            
-            element = self.page.locator(selector)
-            if not element:
-                return None
-            
-            screenshot_path = self.screenshot_dir / f"{name}.png"
-            element.screenshot(path=str(screenshot_path))
-            
-            logger.info(
-                "Element screenshot taken",
-                module="course_automation",
-                name=name,
-                selector=selector,
-                path=str(screenshot_path)
-            )
-            return str(screenshot_path)
-        except Exception as e:
-            logger.error(
-                "Failed to take element screenshot",
-                module="course_automation",
-                name=name,
-                selector=selector,
-                error=str(e)
-            )
-            return None
+            # Navigate to skills verification
+            await page.click('.skills-verification')
+            await page.wait_for_timeout(2000)
 
-    def verify_ui_element(self, selector: str, state: str = "visible") -> bool:
-        """Verify UI element state"""
-        try:
-            if not self.page:
-                raise AutomationError("Page not initialized")
-            
-            element = self.page.locator(selector)
-            
-            if state == "visible":
-                expect(element).to_be_visible()
-            elif state == "hidden":
-                expect(element).not_to_be_visible()
-            elif state == "enabled":
-                expect(element).to_be_enabled()
-            elif state == "disabled":
-                expect(element).to_be_disabled()
-            
-            logger.info(
-                "UI element verified",
-                module="course_automation",
-                selector=selector,
-                state=state
-            )
+            # Start test
+            await page.click('.start-challenge')
+            await page.wait_for_load_state('networkidle')
+
+            # Solve coding problems
+            while await page.is_visible('.CodeMirror'):
+                # Get problem statement
+                problem_text = await page.text_content('.problem-statement')
+
+                # Generate solution
+                solution = await self.model_handler.generate_code_solution(problem_text)
+
+                # Input solution
+                await page.evaluate(f'() => window.editor?.setValue(`{solution}`)')
+
+                # Submit
+                await page.click('.hr_tour-submit')
+                await page.wait_for_timeout(5000)
+
+                # Check if there's a next problem
+                if not await page.is_visible('.next-challenge'):
+                    break
+                else:
+                    await page.click('.next-challenge')
+                    await page.wait_for_timeout(2000)
+
             return True
+
         except Exception as e:
-            logger.error(
-                "Failed to verify UI element",
-                module="course_automation",
-                selector=selector,
-                state=state,
-                error=str(e)
-            )
+            logger.error(f"HackerRank automation failed: {e}")
             return False
 
-    def wait_for_navigation(self, timeout: Optional[int] = None) -> bool:
-        """Wait for page navigation to complete"""
+    async def _handle_harvard_cs50(self, page: Page, course_url: str) -> bool:
+        """Handle Harvard CS50 course automation"""
         try:
-            if not self.page:
-                raise AutomationError("Page not initialized")
-            
-            if timeout is None:
-                timeout = self.config['courses']['default']['timeouts']['navigation']
-            
-            self.page.wait_for_load_state('networkidle', timeout=timeout)
+            logger.info("Starting Harvard CS50 automation")
+
+            # Watch lectures
+            if await page.is_visible('.lecture-video'):
+                await self._watch_video(page, '.lecture-video')
+
+            # Complete problem sets
+            if await page.is_visible('.problem-set'):
+                await page.click('.problem-set')
+                await page.wait_for_timeout(2000)
+
+                # Get problem requirements
+                problem_text = await page.text_content('.problem-description')
+
+                # Generate solution using AI
+                solution = await self.model_handler.generate_code_solution(problem_text)
+
+                # Submit solution
+                if await page.is_visible('textarea'):
+                    await page.fill('textarea', solution)
+                    await page.click('.submit-btn')
+                    await page.wait_for_timeout(3000)
+
             return True
+
         except Exception as e:
-            logger.error(
-                "Failed to wait for navigation",
-                module="course_automation",
-                timeout=timeout,
-                error=str(e)
-            )
-            return False 
+            logger.error(f"Harvard CS50 automation failed: {e}")
+            return False
+
+    async def _handle_kaggle(self, page: Page, course_url: str) -> bool:
+        """Handle Kaggle Learn automation"""
+        try:
+            logger.info("Starting Kaggle Learn automation")
+
+            # Navigate through exercises
+            while await page.is_visible('.exercise'):
+                # Read exercise content
+                exercise_content = await page.text_content('.exercise')
+
+                # Complete coding exercise
+                if await page.is_visible('.CodeMirror'):
+                    solution = await self.model_handler.generate_code_solution(exercise_content)
+                    await page.evaluate(f'() => window.editor?.setValue(`{solution}`)')
+
+                    # Run code
+                    await page.click('.run-button')
+                    await page.wait_for_timeout(3000)
+
+                    # Submit if successful
+                    if await page.is_visible('.submit-button:not([disabled])'):
+                        await page.click('.submit-button')
+                        await page.wait_for_timeout(2000)
+
+                # Move to next exercise
+                if await page.is_visible('.next-exercise'):
+                    await page.click('.next-exercise')
+                    await page.wait_for_timeout(2000)
+                else:
+                    break
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Kaggle automation failed: {e}")
+            return False
+
+    async def _handle_google_skillshop(self, page: Page, course_url: str) -> bool:
+        """Handle Google Skillshop automation"""
+        try:
+            logger.info("Starting Google Skillshop automation")
+
+            # Complete course content
+            while await page.is_visible('.course-content'):
+                # Read lesson content
+                await page.scroll_to_bottom()
+                await page.wait_for_timeout(2000)
+
+                # Take assessments
+                if await page.is_visible('.assessment'):
+                    await self._handle_assessment(page, '.assessment')
+
+                # Move to next section
+                if await page.is_visible('.next-section'):
+                    await page.click('.next-section')
+                    await page.wait_for_timeout(2000)
+                else:
+                    break
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Google Skillshop automation failed: {e}")
+            return False
+
+    async def _handle_microsoft_learn(self, page: Page, course_url: str) -> bool:
+        """Handle Microsoft Learn automation"""
+        try:
+            logger.info("Starting Microsoft Learn automation")
+
+            # Complete learning modules
+            while await page.is_visible('.module-content'):
+                # Read content
+                await page.scroll_to_bottom()
+                await page.wait_for_timeout(2000)
+
+                # Complete knowledge checks
+                if await page.is_visible('.knowledge-check'):
+                    await self._handle_quiz(page, '.knowledge-check')
+
+                # Mark module complete
+                if await page.is_visible('.complete-module'):
+                    await page.click('.complete-module')
+                    await page.wait_for_timeout(2000)
+
+                # Next module
+                if await page.is_visible('.next-module'):
+                    await page.click('.next-module')
+                    await page.wait_for_timeout(2000)
+                else:
+                    break
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Microsoft Learn automation failed: {e}")
+            return False
+
+    # Generic handlers for common course elements
+
+    async def _watch_video(self, page: Page, video_selector: str) -> bool:
+        """Generic video watching handler"""
+        try:
+            if await page.is_visible(video_selector):
+                # Click play
+                if await page.is_visible('.vjs-play-control'):
+                    await page.click('.vjs-play-control')
+
+                # Wait for video to complete (simulate watching)
+                duration = await page.evaluate('() => document.querySelector("video")?.duration || 60')
+                # Max 5 minutes
+                await page.wait_for_timeout(min(int(duration * 1000), 300000))
+
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Video watching failed: {e}")
+            return False
+
+    async def _handle_quiz(self, page: Page, quiz_selector: str) -> bool:
+        """Generic quiz handling"""
+        try:
+            if await page.is_visible(quiz_selector):
+                # Get quiz questions
+                questions = await page.query_selector_all(f'{quiz_selector} .question')
+
+                for question in questions:
+                    question_text = await question.text_content()
+
+                    # Get answer using AI
+                    answer = await self.model_handler.answer_question(question_text)
+
+                    # Select answer (adapt based on question type)
+                    options = await question.query_selector_all('input[type="radio"], input[type="checkbox"]')
+                    if options:
+                        # Find best matching option
+                        for option in options:
+                            option_text = await option.get_attribute('value') or await option.text_content()
+                            if answer.lower() in option_text.lower():
+                                await option.click()
+                                break
+
+                # Submit quiz
+                submit_btn = await page.query_selector(f'{quiz_selector} .submit-button')
+                if submit_btn:
+                    await submit_btn.click()
+                    await page.wait_for_timeout(2000)
+
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Quiz handling failed: {e}")
+            return False
+
+    async def _handle_assessment(self, page: Page, assessment_selector: str) -> bool:
+        """Generic assessment handling"""
+        try:
+            return await self._handle_quiz(page, assessment_selector)
+        except Exception as e:
+            logger.error(f"Assessment handling failed: {e}")
+            return False
+
+    # Placeholder handlers for remaining platforms
+    async def _handle_huggingface(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_university_helsinki(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_upgrad(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_ibm_skills(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_matlab_onramp(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_cisco_netacad(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_saylor_academy(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_stepik(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_complexity_explorer(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_hubspot_academy(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_wolfram_u(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_semrush_academy(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_codesignal(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_open_university(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_stanford_medicine(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_edraak(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_openhpi(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_edx(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_coursera(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_udemy(self, page: Page, course_url: str) -> bool:
+        return await self._handle_generic_platform(page, course_url)
+
+    async def _handle_generic_platform(self, page: Page, course_url: str) -> bool:
+        """Generic handler for platforms without specific implementation"""
+        try:
+            logger.info(f"Using generic handler for {self.current_platform}")
+
+            # Basic course completion flow
+            # 1. Watch videos if present
+            if await page.is_visible('.video, .video-player'):
+                await self._watch_video(page, '.video, .video-player')
+
+            # 2. Complete quizzes if present
+            if await page.is_visible('.quiz, .quiz-container, .assessment'):
+                await self._handle_quiz(page, '.quiz, .quiz-container, .assessment')
+
+            # 3. Submit assignments if present
+            if await page.is_visible('.assignment, textarea'):
+                assignment_text = await page.text_content('.assignment-instructions, .assignment-description')
+                if assignment_text:
+                    solution = await self.model_handler.generate_text_response(assignment_text)
+                    await page.fill('textarea', solution)
+                    if await page.is_visible('.submit-assignment, .submit-button'):
+                        await page.click('.submit-assignment, .submit-button')
+
+            # 4. Navigate to next content
+            if await page.is_visible('.next-button, .next-lesson, .continue-button'):
+                await page.click('.next-button, .next-lesson, .continue-button')
+                await page.wait_for_timeout(2000)
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Generic platform handler failed: {e}")
+            return False
+
+    async def get_certificate(self, page: Page) -> Optional[str]:
+        """Download certificate if available"""
+        try:
+            certificate_selectors = [
+                '.certificate-download',
+                '.certificate-link',
+                '.download-certificate',
+                '.badge-download',
+                'a[href*="certificate"]',
+                'a[href*="badge"]'
+            ]
+
+            for selector in certificate_selectors:
+                if await page.is_visible(selector):
+                    # Take screenshot of certificate
+                    cert_path = f"data/certificates/{self.current_platform}_{int(time.time())}.png"
+                    await page.screenshot(path=cert_path)
+
+                    # Try to download if it's a download link
+                    href = await page.get_attribute(selector, 'href')
+                    if href and any(ext in href for ext in ['.pdf', '.png', '.jpg']):
+                        async with page.expect_download() as download_info:
+                            await page.click(selector)
+                        download = await download_info.value
+                        await download.save_as(cert_path.replace('.png', f'.{href.split(".")[-1]}'))
+
+                    logger.info(f"Certificate saved: {cert_path}")
+                    return cert_path
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Certificate download failed: {e}")
+            return None

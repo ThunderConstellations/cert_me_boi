@@ -12,30 +12,30 @@ ai:
   default_provider: openrouter
   default_model: deepseek/deepseek-r1-0528:free
   openrouter_models:
-  - deepseek/deepseek-r1-0528:free
-  - deepseek-ai/deepseek-coder-6.7b-instruct
-  - deepseek-ai/deepseek-llm-7b-chat
-  - deepseek-ai/deepseek-math-7b-instruct
-  - microsoft/phi-2
-  - microsoft/phi-3-mini-4k-instruct
-  temperature: 0.7
-  max_tokens: 1000
-  api_key: ''
-  use_openrouter: true
-  fallback_to_local: true
-  model_categories:
-    free_models:
     - deepseek/deepseek-r1-0528:free
     - deepseek-ai/deepseek-coder-6.7b-instruct
     - deepseek-ai/deepseek-llm-7b-chat
     - deepseek-ai/deepseek-math-7b-instruct
     - microsoft/phi-2
     - microsoft/phi-3-mini-4k-instruct
+  temperature: 0.7
+  max_tokens: 1000
+  api_key: ""
+  use_openrouter: true
+  fallback_to_local: true
+  model_categories:
+    free_models:
+      - deepseek/deepseek-r1-0528:free
+      - deepseek-ai/deepseek-coder-6.7b-instruct
+      - deepseek-ai/deepseek-llm-7b-chat
+      - deepseek-ai/deepseek-math-7b-instruct
+      - microsoft/phi-2
+      - microsoft/phi-3-mini-4k-instruct
     premium_models:
-    - anthropic/claude-3.5-sonnet
-    - openai/gpt-4
-    - google/gemini-pro-1.5
-    - meta-llama/llama-3.1-8b-instruct
+      - anthropic/claude-3.5-sonnet
+      - openai/gpt-4
+      - google/gemini-pro-1.5
+      - meta-llama/llama-3.1-8b-instruct
   text_recognition:
     name: tesseract
     language: eng
@@ -58,100 +58,419 @@ browser:
   viewport:
     width: 1920
     height: 1080
-  user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
+  user_agent:
+    Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
     like Gecko) Chrome/121.0.0.0 Safari/537.36
   headless: false
 platforms:
-- name: coursera
-  base_url: https://www.coursera.org
-  selectors:
-    login_button: button[data-track-component='login_redirect']
-    email_input: input[type='email']
-    password_input: input[type='password']
-    submit_button: button[type='submit']
-    course_progress: .course-progress
-    video_player: .video-player
-    play_button: .vjs-play-control
-    pause_button: .vjs-pause-control
-    next_button: .next-button
-    quiz_container: .quiz-container
-    quiz_input: input.quiz-answer
-    quiz_submit: button.submit-answer
-    assignment_input: textarea.assignment-text
-    assignment_submit: button.submit-assignment
-- name: udemy
-  base_url: https://www.udemy.com
-  selectors:
-    login_button: a[data-purpose='header-login']
-    email_input: '#email--1'
-    password_input: '#form-group--3'
-    submit_button: button[type='submit']
-    course_progress: .curriculum-item-link--progress--23Aaf
-    video_player: .video-player--video-wrapper--2kmnY
-    play_button: .vjs-play-control
-    pause_button: .vjs-pause-control
-    next_button: '[data-purpose=''go-to-next'']'
-    quiz_container: .mc-quiz-question--container--2MZCl
-    quiz_input: input[type='radio']
-    quiz_submit: button[data-purpose='submit-quiz-button']
-    assignment_input: textarea[data-purpose='assignment-text']
-    assignment_submit: button[data-purpose='submit-assignment']
+  # Existing platforms
+  - name: coursera
+    base_url: https://www.coursera.org
+    selectors:
+      login_button: button[data-track-component='login_redirect']
+      email_input: input[type='email']
+      password_input: input[type='password']
+      submit_button: button[type='submit']
+      course_progress: .course-progress
+      video_player: .video-player
+      play_button: .vjs-play-control
+      pause_button: .vjs-pause-control
+      next_button: .next-button
+      quiz_container: .quiz-container
+      quiz_input: input.quiz-answer
+      quiz_submit: button.submit-answer
+      assignment_input: textarea.assignment-text
+      assignment_submit: button.submit-assignment
+
+  - name: udemy
+    base_url: https://www.udemy.com
+    selectors:
+      login_button: a[data-purpose='header-login']
+      email_input: "#email--1"
+      password_input: "#form-group--3"
+      submit_button: button[type='submit']
+      course_progress: .curriculum-item-link--progress--23Aaf
+      video_player: .video-player--video-wrapper--2kmnY
+      play_button: .vjs-play-control
+      pause_button: .vjs-pause-control
+      next_button: '[data-purpose="go-to-next"]'
+      quiz_container: .mc-quiz-question--container--2MZCl
+      quiz_input: input[type='radio']
+      quiz_submit: button[data-purpose='submit-quiz-button']
+      assignment_input: textarea[data-purpose='assignment-text']
+      assignment_submit: button[data-purpose='submit-assignment']
+
+  # New Free Certification Platforms
+  - name: freecodecamp
+    base_url: https://www.freecodecamp.org
+    selectors:
+      login_button: .btn-cta-big
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: "#signin-btn"
+      course_progress: .progress-bar
+      challenge_container: .challenge-instructions
+      code_editor: .monaco-editor
+      run_tests_button: "#test-button"
+      submit_challenge_button: "#submit-button"
+      next_challenge: .btn-primary
+      certificate_link: ".certification-section a"
+
+  - name: hackerrank
+    base_url: https://www.hackerrank.com
+    selectors:
+      login_button: ".login-button"
+      email_input: "#username"
+      password_input: "#password"
+      submit_button: ".ui-btn"
+      skills_verification: ".skills-verification"
+      start_test_button: ".start-challenge"
+      code_editor: ".CodeMirror"
+      submit_test_button: ".hr_tour-submit"
+      results_container: ".result-item"
+      certificate_download: ".certificate-download"
+
+  - name: edx
+    base_url: https://www.edx.org
+    selectors:
+      login_button: ".login-button"
+      email_input: "#login-email"
+      password_input: "#login-password"
+      submit_button: ".login-button"
+      course_progress: ".progress"
+      video_player: ".video"
+      play_button: ".vjs-play-control"
+      next_unit: ".sequence-nav-button"
+      quiz_container: ".problem"
+      quiz_submit: ".check"
+      certificate_link: ".certificate"
+
+  - name: harvard_cs50
+    base_url: https://cs50.harvard.edu
+    selectors:
+      login_button: ".btn-login"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".btn-submit"
+      lecture_video: ".lecture-video"
+      problem_set: ".problem-set"
+      submit_problem_button: ".submit-btn"
+      progress_tracker: ".progress"
+      certificate_link: ".certificate-link"
+
+  - name: huggingface
+    base_url: https://huggingface.co
+    selectors:
+      login_button: ".btn-outline"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".btn-primary"
+      course_content: ".course-content"
+      next_lesson: ".next-lesson"
+      quiz_container: ".quiz"
+      submit_answer: ".submit-quiz"
+      certificate_section: ".certificate"
+
+  - name: kaggle
+    base_url: https://www.kaggle.com
+    selectors:
+      login_button: ".button--small"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".button--primary"
+      learn_section: ".learn-content"
+      exercise_container: ".exercise"
+      code_editor: ".CodeMirror"
+      run_button: ".run-button"
+      submit_exercise_button: ".submit-button"
+      certificate_link: ".certificate-link"
+
+  - name: university_helsinki
+    base_url: https://www.mooc.fi
+    selectors:
+      login_button: ".login-button"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".btn-primary"
+      course_material: ".course-material"
+      exercise_container: ".exercise"
+      submit_exercise: ".submit-btn"
+      progress_bar: ".progress"
+      certificate_download: ".certificate-download"
+
+  - name: upgrad
+    base_url: https://www.upgrad.com
+    selectors:
+      login_button: ".login-btn"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".submit-btn"
+      course_content: ".course-content"
+      video_player: ".video-player"
+      next_lesson: ".next-lesson"
+      assignment_container: ".assignment"
+      submit_assignment: ".submit-assignment"
+
+  - name: ibm_skills
+    base_url: https://www.ibm.com/training
+    selectors:
+      login_button: ".ibm-btn"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".login-submit"
+      course_catalog: ".course-catalog"
+      badge_container: ".badge-container"
+      complete_module: ".complete-module"
+      certificate_link: ".certificate-link"
+
+  - name: matlab_onramp
+    base_url: https://matlabacademy.mathworks.com
+    selectors:
+      login_button: ".login-button"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".submit-btn"
+      interactive_lesson: ".interactive-lesson"
+      code_editor: ".code-editor"
+      run_code: ".run-code"
+      next_lesson: ".next-lesson"
+      certificate_download: ".certificate-download"
+
+  - name: google_skillshop
+    base_url: https://skillshop.docebosaas.com
+    selectors:
+      login_button: ".login-btn"
+      email_input: "#username"
+      password_input: "#password"
+      submit_button: ".btn-login"
+      course_content: ".course-content"
+      assessment_container: ".assessment"
+      submit_assessment: ".submit-assessment"
+      certificate_section: ".certificate-section"
+
+  - name: microsoft_learn
+    base_url: https://docs.microsoft.com/learn
+    selectors:
+      login_button: ".sign-in"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".btn-primary"
+      learning_path: ".learning-path"
+      module_content: ".module-content"
+      knowledge_check: ".knowledge-check"
+      complete_module: ".complete-module"
+      achievement_badge: ".achievement-badge"
+
+  - name: cisco_netacad
+    base_url: https://www.netacad.com
+    selectors:
+      login_button: ".login-link"
+      email_input: "#username"
+      password_input: "#password"
+      submit_button: ".login-btn"
+      course_content: ".course-content"
+      lab_exercise: ".lab-exercise"
+      packet_tracer: ".packet-tracer"
+      submit_lab: ".submit-lab"
+      certificate_link: ".certificate-link"
+
+  - name: saylor_academy
+    base_url: https://www.saylor.org
+    selectors:
+      login_button: ".login-button"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".btn-submit"
+      course_outline: ".course-outline"
+      unit_content: ".unit-content"
+      assessment_link: ".assessment-link"
+      final_exam: ".final-exam"
+      certificate_download: ".certificate-download"
+
+  - name: stepik
+    base_url: https://stepik.org
+    selectors:
+      login_button: ".navbar__auth"
+      email_input: "#id_login_email"
+      password_input: "#id_login_password"
+      submit_button: ".sign-form__btn"
+      lesson_content: ".lesson-content"
+      code_challenge: ".code-challenge"
+      submit_solution: ".submit-solution"
+      progress_indicator: ".progress-indicator"
+      certificate_link: ".certificate-link"
+
+  - name: complexity_explorer
+    base_url: https://www.complexityexplorer.org
+    selectors:
+      login_button: ".login-link"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".btn-primary"
+      course_content: ".course-content"
+      video_lecture: ".video-lecture"
+      quiz_container: ".quiz-container"
+      submit_quiz: ".submit-quiz"
+      certificate_section: ".certificate-section"
+
+  - name: hubspot_academy
+    base_url: https://academy.hubspot.com
+    selectors:
+      login_button: ".login-btn"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".submit-btn"
+      lesson_content: ".lesson-content"
+      video_player: ".video-player"
+      quiz_question: ".quiz-question"
+      submit_answer: ".submit-answer"
+      certification_link: ".certification-link"
+
+  - name: wolfram_u
+    base_url: https://www.wolfram.com/wolfram-u
+    selectors:
+      login_button: ".login-button"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".login-submit"
+      course_material: ".course-material"
+      notebook_exercise: ".notebook-exercise"
+      complete_exercise: ".complete-exercise"
+      certificate_download: ".certificate-download"
+
+  - name: semrush_academy
+    base_url: https://www.semrush.com/academy
+    selectors:
+      login_button: ".login-btn"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".submit-btn"
+      course_lessons: ".course-lessons"
+      exam_container: ".exam-container"
+      submit_exam: ".submit-exam"
+      certificate_link: ".certificate-link"
+
+  - name: codesignal
+    base_url: https://codesignal.com
+    selectors:
+      login_button: ".login-button"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".btn-primary"
+      assessment_container: ".assessment-container"
+      code_editor: ".code-editor"
+      run_tests: ".run-tests"
+      submit_solution: ".submit-solution"
+      certification_badge: ".certification-badge"
+
+  - name: open_university
+    base_url: https://www.open.edu
+    selectors:
+      login_button: ".login-link"
+      email_input: "#username"
+      password_input: "#password"
+      submit_button: ".login-btn"
+      course_content: ".course-content"
+      activity_container: ".activity-container"
+      submit_activity: ".submit-activity"
+      badge_section: ".badge-section"
+
+  - name: stanford_medicine
+    base_url: https://med.stanford.edu
+    selectors:
+      login_button: ".login-button"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".submit-btn"
+      course_modules: ".course-modules"
+      assessment_link: ".assessment-link"
+      complete_assessment: ".complete-assessment"
+      certificate_download: ".certificate-download"
+
+  # Additional International Platforms
+  - name: edraak
+    base_url: https://www.edraak.org
+    selectors:
+      login_button: ".login-btn"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".btn-primary"
+      course_content: ".course-content"
+      video_lecture: ".video-lecture"
+      quiz_section: ".quiz-section"
+      certificate_link: ".certificate-link"
+
+  - name: openhpi
+    base_url: https://open.hpi.de
+    selectors:
+      login_button: ".login-link"
+      email_input: "#email"
+      password_input: "#password"
+      submit_button: ".submit-btn"
+      course_items: ".course-items"
+      video_player: ".video-player"
+      assignment_container: ".assignment-container"
+      certificate_section: ".certificate-section"
+
 monitor:
   enabled: true
   capture_interval: 1.0
   regions:
-  - name: video_player
-    coordinates:
-    - 0
-    - 0
-    - 1920
-    - 1080
-  - name: progress_bar
-    coordinates:
-    - 0
-    - 1000
-    - 1920
-    - 1020
+    - name: video_player
+      coordinates:
+        - 0
+        - 0
+        - 1920
+        - 1080
+    - name: progress_bar
+      coordinates:
+        - 0
+        - 1000
+        - 1920
+        - 1020
   templates:
-  - name: play_button
-    path: data/templates/play_button.png
-    confidence: 0.8
-  - name: pause_button
-    path: data/templates/pause_button.png
-    confidence: 0.8
-  - name: complete_button
-    path: data/templates/complete_button.png
-    confidence: 0.9
+    - name: play_button
+      path: data/templates/play_button.png
+      confidence: 0.8
+    - name: pause_button
+      path: data/templates/pause_button.png
+      confidence: 0.8
+    - name: complete_button
+      path: data/templates/complete_button.png
+      confidence: 0.9
+
 completion_rules:
   video_lectures:
-  - check_play_status: true
-  - minimum_watch_time: 0.9
-  - check_progress_bar: true
+    - check_play_status: true
+    - minimum_watch_time: 0.9
+    - check_progress_bar: true
   quizzes:
-  - attempt_limit: 3
-  - use_ai_assistance: true
-  - save_answers: true
+    - attempt_limit: 3
+    - use_ai_assistance: true
+    - save_answers: true
   assignments:
-  - use_ai_assistance: true
-  - plagiarism_check: true
-  - review_before_submit: true
+    - use_ai_assistance: true
+    - plagiarism_check: true
+    - review_before_submit: true
+
 error_handling:
   captcha:
-  - detection_method: image_recognition
-  - solver_service: 2captcha
+    - detection_method: image_recognition
+    - solver_service: 2captcha
   network:
-  - retry_count: 3
-  - backoff_factor: 2
-  - max_delay: 60
+    - retry_count: 3
+    - backoff_factor: 2
+    - max_delay: 60
   session:
-  - auto_refresh: true
-  - max_session_time: 7200
+    - auto_refresh: true
+    - max_session_time: 7200
+
 logging:
   log_dir: logs
   max_size: 10485760
   backup_count: 5
-  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-  date_format: '%Y-%m-%d %H:%M:%S'
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"
   levels:
     console: INFO
     file: DEBUG
@@ -161,21 +480,23 @@ logging:
     compress: true
     interval: 3600
     backup_count: 5
+
 certificates:
   save_dir: data/certificates
   verify_text: true
   min_confidence: 0.8
   archive_dir: data/certificates/archive
   formats:
-  - png
-  - pdf
+    - png
+    - pdf
+
 courses:
   default:
     selectors:
-      login_button: '#login-button'
-      email_field: '#email'
-      password_field: '#password'
-      certificate_container: '#certificate-container'
+      login_button: "#login-button"
+      email_field: "#email"
+      password_field: "#password"
+      certificate_container: "#certificate-container"
       progress_bar: .progress-bar
       video_player: .video-player
       next_button: .next-button

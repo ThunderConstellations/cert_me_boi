@@ -29,7 +29,8 @@ def main():
         sys.exit(f"❌ GUI app not found at {app_path}")
 
     print("🚀 Launching web interface...")
-    print("📱 Open your browser to the URL shown below") print("🔗 The interface will be available at http://localhost:8501")
+    print("📱 Open your browser to the URL shown below")
+    print("🔗 The interface will be available at http://localhost:8501")
 
     # Run streamlit
     subprocess.run([
