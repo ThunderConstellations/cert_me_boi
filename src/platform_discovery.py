@@ -7,8 +7,7 @@ Helps users find the best free certification opportunities across all supported 
 import requests
 import yaml
 import logging
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass
+from typing import Dict, List, Anyfrom dataclasses import dataclass
 from datetime import datetime
 import asyncio
 import aiohttp

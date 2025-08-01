@@ -8,6 +8,12 @@ settings:
   delay_between_actions: 2
   capture_video: true
   log_level: INFO
+# Configurable timeout values (in milliseconds)
+timeouts:
+  default: 2000 # Default wait time for UI interactions
+  page_load: 5000 # Longer wait for page loads and submissions
+  element_wait: 3000 # Wait time for tests, validations, and processing
+
 ai:
   default_provider: openrouter
   default_model: deepseek/deepseek-r1-0528:free
@@ -58,10 +64,8 @@ browser:
   viewport:
     width: 1920
     height: 1080
-  user_agent:
-    Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
-    like Gecko) Chrome/121.0.0.0 Safari/537.36
-  headless: false
+  user_agent: >-
+    Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36  headless: false
 platforms:
   # Existing platforms
   - name: coursera

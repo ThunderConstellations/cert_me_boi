@@ -3,12 +3,12 @@
 import asyncio
 import logging
 import time
+import os
 from typing import Dict, Any, Optional, List
 from playwright.async_api import Page, Browser
 from ..ai.model_handler import ModelHandler
 from ..monitor.screen_monitor import ScreenMonitor
 import yaml
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,14 @@ class CourseAutomation:
         self.model_handler = ModelHandler()
         self.screen_monitor = ScreenMonitor()
         self.current_platform = None
+
+        # Configure timeouts from config with defaults
+        timeouts_config = self.config.get('timeouts', {})
+        self.timeouts = {
+            'default': timeouts_config.get('default', 2000),
+            'page_load': timeouts_config.get('page_load', 5000),
+            'element_wait': timeouts_config.get('element_wait', 3000)
+        }
 
         # Platform-specific handlers
         self.platform_handlers = {
@@ -73,7 +81,11 @@ class CourseAutomation:
 
             # Perform login if credentials provided
             if credentials:
-                await self._login(page, platform, credentials)
+                login_success = await self._login(page, platform, credentials)
+                if not login_success:
+                    logger.error(
+                        f"Login failed for {platform}, aborting automation")
+                    return False
 
             # Use platform-specific handler
             if platform in self.platform_handlers:
@@ -95,7 +107,7 @@ class CourseAutomation:
             login_btn = selectors.get('login_button')
             if login_btn:
                 await page.click(login_btn)
-                await page.wait_for_timeout(2000)
+                await page.wait_for_timeout(self.timeouts['default'])
 
             # Fill credentials
             email_selector = selectors.get('email_input')
@@ -132,7 +144,15 @@ class CourseAutomation:
         try:
             logger.info("Starting FreeCodeCamp automation")
 
+            MAX_CHALLENGES = 100
+            challenge_count = 0
             while True:
+                if challenge_count >= MAX_CHALLENGES:
+                    logger.warning(
+                        f"Reached maximum challenge limit ({MAX_CHALLENGES})")
+                    break
+                challenge_count += 1
+
                 # Wait for challenge to load
                 await page.wait_for_selector('.challenge-instructions', timeout=10000)
 
@@ -145,19 +165,21 @@ class CourseAutomation:
                     current_code = await page.evaluate('() => window.editor?.getValue() || ""')
 
                     # Generate solution using AI
-                    solution = await self.model_handler.generate_code_solution(instructions, current_code)
+                    prompt = f"Solve this coding challenge:\n{instructions}\n\nCurrent code:\n{current_code}\n\nProvide only the complete solution code:"
+                    solution = await self.model_handler.generate_text(prompt)
 
-                    # Input solution
-                    await page.evaluate(f'() => window.editor?.setValue(`{solution}`)')
+                    # Input solution safely using parameter passing
+                    if solution:
+                        await page.evaluate('(solution) => window.editor?.setValue(solution)', solution)
 
                     # Run tests
                     await page.click('#test-button')
-                    await page.wait_for_timeout(3000)
+                    await page.wait_for_timeout(self.timeouts['element_wait'])
 
                     # Submit if tests pass
                     if await page.is_visible('#submit-button:not([disabled])'):
                         await page.click('#submit-button')
-                        await page.wait_for_timeout(2000)
+                        await page.wait_for_timeout(self.timeouts['default'])
 
                 # Check if completed
                 if await page.is_visible('.challenge-completed'):
@@ -166,7 +188,7 @@ class CourseAutomation:
                 # Move to next challenge
                 if await page.is_visible('.btn-primary'):
                     await page.click('.btn-primary')
-                    await page.wait_for_timeout(2000)
+                    await page.wait_for_timeout(self.timeouts['default'])
                 else:
                     break
 
@@ -183,7 +205,7 @@ class CourseAutomation:
 
             # Navigate to skills verification
             await page.click('.skills-verification')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(self.timeouts['default'])
 
             # Start test
             await page.click('.start-challenge')
@@ -195,21 +217,23 @@ class CourseAutomation:
                 problem_text = await page.text_content('.problem-statement')
 
                 # Generate solution
-                solution = await self.model_handler.generate_code_solution(problem_text)
+                prompt = f"Solve this coding problem:\n{problem_text}\n\nProvide only the complete solution code:"
+                solution = await self.model_handler.generate_text(prompt)
 
-                # Input solution
-                await page.evaluate(f'() => window.editor?.setValue(`{solution}`)')
+                # Input solution safely using parameter passing
+                if solution:
+                    await page.evaluate('(solution) => window.editor?.setValue(solution)', solution)
 
                 # Submit
                 await page.click('.hr_tour-submit')
-                await page.wait_for_timeout(5000)
+                await page.wait_for_timeout(self.timeouts['page_load'])
 
                 # Check if there's a next problem
                 if not await page.is_visible('.next-challenge'):
                     break
                 else:
                     await page.click('.next-challenge')
-                    await page.wait_for_timeout(2000)
+                    await page.wait_for_timeout(self.timeouts['default'])
 
             return True
 
@@ -229,19 +253,20 @@ class CourseAutomation:
             # Complete problem sets
             if await page.is_visible('.problem-set'):
                 await page.click('.problem-set')
-                await page.wait_for_timeout(2000)
+                await page.wait_for_timeout(self.timeouts['default'])
 
                 # Get problem requirements
                 problem_text = await page.text_content('.problem-description')
 
                 # Generate solution using AI
-                solution = await self.model_handler.generate_code_solution(problem_text)
+                prompt = f"Solve this CS50 problem:\n{problem_text}\n\nProvide only the complete solution code:"
+                solution = await self.model_handler.generate_text(prompt)
 
                 # Submit solution
-                if await page.is_visible('textarea'):
+                if await page.is_visible('textarea') and solution:
                     await page.fill('textarea', solution)
                     await page.click('.submit-btn')
-                    await page.wait_for_timeout(3000)
+                    await page.wait_for_timeout(self.timeouts['element_wait'])
 
             return True
 
@@ -261,22 +286,24 @@ class CourseAutomation:
 
                 # Complete coding exercise
                 if await page.is_visible('.CodeMirror'):
-                    solution = await self.model_handler.generate_code_solution(exercise_content)
-                    await page.evaluate(f'() => window.editor?.setValue(`{solution}`)')
+                    prompt = f"Solve this Kaggle exercise:\n{exercise_content}\n\nProvide only the complete solution code:"
+                    solution = await self.model_handler.generate_text(prompt)
+                    if solution:
+                        await page.evaluate('(solution) => window.editor?.setValue(solution)', solution)
 
                     # Run code
                     await page.click('.run-button')
-                    await page.wait_for_timeout(3000)
+                    await page.wait_for_timeout(self.timeouts['element_wait'])
 
                     # Submit if successful
                     if await page.is_visible('.submit-button:not([disabled])'):
                         await page.click('.submit-button')
-                        await page.wait_for_timeout(2000)
+                        await page.wait_for_timeout(self.timeouts['default'])
 
                 # Move to next exercise
                 if await page.is_visible('.next-exercise'):
                     await page.click('.next-exercise')
-                    await page.wait_for_timeout(2000)
+                    await page.wait_for_timeout(self.timeouts['default'])
                 else:
                     break
 
@@ -294,9 +321,9 @@ class CourseAutomation:
             # Complete course content
             while await page.is_visible('.course-content'):
                 # Read lesson content
-                await page.scroll_to_bottom()
-                await page.wait_for_timeout(2000)
-
+                # Scroll to bottom of the page
+                await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                await page.wait_for_timeout(self.timeouts['default'])
                 # Take assessments
                 if await page.is_visible('.assessment'):
                     await self._handle_assessment(page, '.assessment')
@@ -304,7 +331,7 @@ class CourseAutomation:
                 # Move to next section
                 if await page.is_visible('.next-section'):
                     await page.click('.next-section')
-                    await page.wait_for_timeout(2000)
+                    await page.wait_for_timeout(self.timeouts['default'])
                 else:
                     break
 
@@ -322,8 +349,8 @@ class CourseAutomation:
             # Complete learning modules
             while await page.is_visible('.module-content'):
                 # Read content
-                await page.scroll_to_bottom()
-                await page.wait_for_timeout(2000)
+                await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                await page.wait_for_timeout(self.timeouts['default'])
 
                 # Complete knowledge checks
                 if await page.is_visible('.knowledge-check'):
@@ -332,12 +359,12 @@ class CourseAutomation:
                 # Mark module complete
                 if await page.is_visible('.complete-module'):
                     await page.click('.complete-module')
-                    await page.wait_for_timeout(2000)
+                    await page.wait_for_timeout(self.timeouts['default'])
 
                 # Next module
                 if await page.is_visible('.next-module'):
                     await page.click('.next-module')
-                    await page.wait_for_timeout(2000)
+                    await page.wait_for_timeout(self.timeouts['default'])
                 else:
                     break
 
@@ -378,16 +405,26 @@ class CourseAutomation:
                 for question in questions:
                     question_text = await question.text_content()
 
+                    # Get all option texts to provide context
+                    options = await question.query_selector_all('input[type="radio"], input[type="checkbox"]')
+                    context_options = []
+                    for option in options:
+                        option_text = await option.get_attribute('value') or await option.text_content()
+                        if option_text:
+                            context_options.append(option_text)
+
+                    context = "Available options: " + \
+                        ", ".join(context_options)
+
                     # Get answer using AI
-                    answer = await self.model_handler.answer_question(question_text)
+                    answer = await self.model_handler.answer_question(question_text, context)
 
                     # Select answer (adapt based on question type)
-                    options = await question.query_selector_all('input[type="radio"], input[type="checkbox"]')
-                    if options:
+                    if answer and options:
                         # Find best matching option
                         for option in options:
                             option_text = await option.get_attribute('value') or await option.text_content()
-                            if answer.lower() in option_text.lower():
+                            if option_text and answer.lower() in option_text.lower():
                                 await option.click()
                                 break
 
@@ -395,7 +432,7 @@ class CourseAutomation:
                 submit_btn = await page.query_selector(f'{quiz_selector} .submit-button')
                 if submit_btn:
                     await submit_btn.click()
-                    await page.wait_for_timeout(2000)
+                    await page.wait_for_timeout(self.timeouts['default'])
 
                 return True
             return False
@@ -490,15 +527,17 @@ class CourseAutomation:
             if await page.is_visible('.assignment, textarea'):
                 assignment_text = await page.text_content('.assignment-instructions, .assignment-description')
                 if assignment_text:
-                    solution = await self.model_handler.generate_text_response(assignment_text)
-                    await page.fill('textarea', solution)
-                    if await page.is_visible('.submit-assignment, .submit-button'):
-                        await page.click('.submit-assignment, .submit-button')
+                    prompt = f"Complete this assignment:\n{assignment_text}\n\nProvide a detailed response:"
+                    solution = await self.model_handler.generate_text(prompt)
+                    if solution:
+                        await page.fill('textarea', solution)
+                        if await page.is_visible('.submit-assignment, .submit-button'):
+                            await page.click('.submit-assignment, .submit-button')
 
             # 4. Navigate to next content
             if await page.is_visible('.next-button, .next-lesson, .continue-button'):
                 await page.click('.next-button, .next-lesson, .continue-button')
-                await page.wait_for_timeout(2000)
+                await page.wait_for_timeout(self.timeouts['default'])
 
             return True
 
@@ -521,6 +560,7 @@ class CourseAutomation:
             for selector in certificate_selectors:
                 if await page.is_visible(selector):
                     # Take screenshot of certificate
+                    os.makedirs("data/certificates", exist_ok=True)
                     cert_path = f"data/certificates/{self.current_platform}_{int(time.time())}.png"
                     await page.screenshot(path=cert_path)
 
