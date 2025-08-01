@@ -241,30 +241,6 @@
 
 ---
 
-### 🔍 **Feature 12: Smart Content Discovery Engine**
-
-**Description**: AI-powered system to discover and recommend relevant courses and certifications.
-
-**Key Components**:
-
-- Course recommendation algorithm
-- Trending certification tracking
-- Industry demand analysis
-- Skill market insights
-- Personalized course discovery
-- Career progression mapping
-
-**Technical Implementation**:
-
-- Recommendation systems
-- Web scraping for trend analysis
-- Natural language processing
-- Market data integration
-
----
-
-### 🎪 **Feature 13: Virtual Reality Learning Environments**
-
 **Description**: Immersive VR experiences for hands-on learning and simulations.
 
 **Key Components**:
