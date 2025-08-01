@@ -31,6 +31,11 @@ class RealAutomationManager:
         self.metrics = MetricsCollector()
         self.callbacks = {}
         
+        # Thread control events
+        self.automation_threads = {}  # course_id -> thread
+        self.pause_events = {}        # course_id -> pause_event
+        self.stop_events = {}         # course_id -> stop_event
+        
         # Start metrics collection
         self.metrics.start_collection()
         
@@ -54,6 +59,10 @@ class RealAutomationManager:
                 'estimated_duration': course_data.get('estimated_duration', 5),
                 'tags': course_data.get('tags', [])
             }
+            
+            # Initialize thread control events
+            self.pause_events[course_id] = threading.Event()
+            self.stop_events[course_id] = threading.Event()
             
             self.log_event("INFO", f"Added course: {course_data['name']}")
             return course_id
@@ -82,20 +91,22 @@ class RealAutomationManager:
                     # Create automation instance
                     self.automation = CertificationAutomation()
                     
-                    # Start the automation
-                    success = self.automation.start_automation(
-                        course['platform'],
-                        {
-                            "email": course['email'],
-                            "password": course['password'],
-                            "course_url": course['url']
-                        }
+                    # Get thread control events
+                    pause_event = self.pause_events[course_id]
+                    stop_event = self.stop_events[course_id]
+                    
+                    # Start the automation with thread control
+                    success = self._run_automation_with_control(
+                        course, pause_event, stop_event
                     )
                     
-                    if success:
+                    if success and not stop_event.is_set():
                         course['status'] = 'completed'
                         course['progress'] = 100.0
                         self.log_event("INFO", f"Completed course: {course['name']}")
+                    elif stop_event.is_set():
+                        course['status'] = 'stopped'
+                        self.log_event("INFO", f"Stopped course: {course['name']}")
                     else:
                         course['status'] = 'failed'
                         self.log_event("ERROR", f"Failed to complete course: {course['name']}")
@@ -108,16 +119,58 @@ class RealAutomationManager:
                     self.log_event("ERROR", f"Automation error: {e}")
                     self.status = 'stopped'
                     self.active_course = None
+                finally:
+                    # Clean up thread reference
+                    if course_id in self.automation_threads:
+                        del self.automation_threads[course_id]
             
             # Start thread
             thread = threading.Thread(target=run_automation)
             thread.daemon = True
+            self.automation_threads[course_id] = thread
             thread.start()
             
             return True
             
         except Exception as e:
             self.log_event("ERROR", f"Failed to start course: {e}")
+            return False
+    
+    def _run_automation_with_control(self, course: Dict[str, Any], 
+                                   pause_event: threading.Event, 
+                                   stop_event: threading.Event) -> bool:
+        """Run automation with pause/resume/stop control"""
+        try:
+            course_id = course['id']
+            
+            # Simulate automation steps with pause/stop checks
+            total_steps = 10
+            for step in range(total_steps):
+                # Check if stop was requested
+                if stop_event.is_set():
+                    self.log_event("INFO", f"Automation stopped for: {course['name']}")
+                    return False
+                
+                # Check if pause was requested
+                while pause_event.is_set():
+                    if stop_event.is_set():
+                        return False
+                    time.sleep(0.1)  # Check every 100ms
+                
+                # Simulate automation work
+                time.sleep(1)  # Simulate step processing
+                
+                # Update progress
+                progress = ((step + 1) / total_steps) * 100
+                course['progress'] = progress
+                
+                self.log_event("INFO", 
+                    f"Step {step + 1}/{total_steps} completed for: {course['name']} ({progress:.1f}%)")
+            
+            return True
+            
+        except Exception as e:
+            self.log_event("ERROR", f"Automation control error: {e}")
             return False
     
     def stop_course(self, course_id: str) -> bool:
@@ -127,6 +180,23 @@ class RealAutomationManager:
                 return False
             
             course = self.courses[course_id]
+            
+            # Signal the automation thread to stop
+            if course_id in self.stop_events:
+                self.stop_events[course_id].set()
+            
+            # Also clear pause if it was set
+            if course_id in self.pause_events:
+                self.pause_events[course_id].clear()
+            
+            # Wait for thread to finish (with timeout)
+            if course_id in self.automation_threads:
+                thread = self.automation_threads[course_id]
+                thread.join(timeout=5.0)  # Wait up to 5 seconds
+                
+                if thread.is_alive():
+                    self.log_event("WARNING", f"Thread for {course['name']} did not stop gracefully")
+            
             course['status'] = 'stopped'
             
             if self.automation:
@@ -151,10 +221,19 @@ class RealAutomationManager:
                 return False
             
             course = self.courses[course_id]
-            course['status'] = 'paused'
             
-            self.log_event("INFO", f"Paused course: {course['name']}")
-            return True
+            # Only pause if currently running
+            if course['status'] != 'running':
+                return False
+            
+            # Signal the automation thread to pause
+            if course_id in self.pause_events:
+                self.pause_events[course_id].set()
+                course['status'] = 'paused'
+                self.log_event("INFO", f"Paused course: {course['name']}")
+                return True
+            
+            return False
             
         except Exception as e:
             self.log_event("ERROR", f"Failed to pause course: {e}")
@@ -167,7 +246,14 @@ class RealAutomationManager:
                 return False
             
             course = self.courses[course_id]
-            if course['status'] == 'paused':
+            
+            # Only resume if currently paused
+            if course['status'] != 'paused':
+                return False
+            
+            # Signal the automation thread to resume
+            if course_id in self.pause_events:
+                self.pause_events[course_id].clear()
                 course['status'] = 'running'
                 self.log_event("INFO", f"Resumed course: {course['name']}")
                 return True
@@ -187,14 +273,9 @@ class RealAutomationManager:
             course = self.courses[course_id]
             
             # If automation is running, try to get real progress
-            if self.automation and course['status'] == 'running':
-                # This would integrate with the actual automation system
-                # For now, simulate progress
-                elapsed = (datetime.now() - course['start_time']).total_seconds()
-                estimated_duration = course['estimated_duration'] * 3600  # Convert to seconds
-                progress = min((elapsed / estimated_duration) * 100, 100.0)
-                course['progress'] = progress
-                return progress
+            if self.automation and course['status'] in ['running', 'paused']:
+                # Return the current progress from the course data
+                return course['progress']
             
             return course['progress']
             
@@ -284,12 +365,19 @@ class RealAutomationManager:
             if len(self.logs) > 100:
                 self.logs = self.logs[-100:]
             
-            # Also log to file
-            logger.log(
-                getattr(logging, level.upper()),
-                message,
-                module="gui_integration"
-            )
+            # Also log to file using appropriate method
+            if level.upper() == 'INFO':
+                logger.info(message, module="gui_integration")
+            elif level.upper() == 'ERROR':
+                logger.error(message, module="gui_integration")
+            elif level.upper() == 'WARNING':
+                logger.warning(message, module="gui_integration")
+            elif level.upper() == 'DEBUG':
+                logger.debug(message, module="gui_integration")
+            elif level.upper() == 'CRITICAL':
+                logger.critical(message, module="gui_integration")
+            else:
+                logger.info(message, module="gui_integration")
             
         except Exception as e:
             print(f"Failed to log event: {e}")
@@ -302,6 +390,7 @@ class RealAutomationManager:
             failed = len([c for c in self.courses.values() if c['status'] == 'failed'])
             running = len([c for c in self.courses.values() if c['status'] == 'running'])
             pending = len([c for c in self.courses.values() if c['status'] == 'pending'])
+            paused = len([c for c in self.courses.values() if c['status'] == 'paused'])
             
             success_rate = (completed / total_courses * 100) if total_courses > 0 else 0
             
@@ -311,6 +400,7 @@ class RealAutomationManager:
                 'failed': failed,
                 'running': running,
                 'pending': pending,
+                'paused': paused,
                 'success_rate': success_rate,
                 'status': self.status,
                 'active_course': self.active_course
@@ -361,6 +451,21 @@ class RealAutomationManager:
     def cleanup(self):
         """Cleanup resources"""
         try:
+            # Stop all running courses
+            for course_id in list(self.courses.keys()):
+                if self.courses[course_id]['status'] in ['running', 'paused']:
+                    self.stop_course(course_id)
+            
+            # Wait for all threads to finish
+            for course_id, thread in self.automation_threads.items():
+                if thread.is_alive():
+                    thread.join(timeout=3.0)
+            
+            # Clear thread control structures
+            self.automation_threads.clear()
+            self.pause_events.clear()
+            self.stop_events.clear()
+            
             if self.automation:
                 self.automation.cleanup()
             
