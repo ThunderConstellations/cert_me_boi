@@ -58,40 +58,51 @@ class RealAutomationManager:
         self.metrics.start_collection()
 
     def _get_or_create_encryption_key(self) -> bytes:
-        """Get or create encryption key for password storage"""
+        """Get or create encryption key for password storage from environment variables"""
         try:
-            key_file = Path("config/.encryption_key")
-
-            if key_file.exists():
-                # Load existing key
-                with open(key_file, 'rb') as f:
-                    return f.read()
-            else:
-                # Create new key
-                key = Fernet.generate_key()
-
-                # Ensure config directory exists
-                key_file.parent.mkdir(parents=True, exist_ok=True)
-
-                # Save key with restricted permissions
-                with open(key_file, 'wb') as f:
-                    f.write(key)
-
-                # Set restrictive permissions (owner read/write only)
+            # Try to get encryption key from environment variable
+            env_key = os.getenv('CERT_ME_BOI_ENCRYPTION_KEY')
+            if env_key:
                 try:
-                    os.chmod(key_file, 0o600)
-                except OSError:
-                    # Windows doesn't support chmod in the same way
-                    pass
+                    # Decode base64 encoded key from environment
+                    key = base64.urlsafe_b64decode(env_key.encode())
+                    self.log_event(
+                        "INFO", "Using encryption key from environment variable")
+                    return key
+                except Exception as decode_error:
+                    self.log_event(
+                        "WARNING", f"Failed to decode encryption key from environment: {decode_error}")
 
+            # Try to derive key from passphrase
+            passphrase = os.getenv('CERT_ME_BOI_PASSPHRASE')
+            if passphrase:
+                # Use PBKDF2 to derive key from passphrase
+                salt = b'cert_me_boi_salt_2024'  # In production, use random salt stored separately
+                kdf = PBKDF2HMAC(
+                    algorithm=hashes.SHA256(),
+                    length=32,
+                    salt=salt,
+                    iterations=100000,
+                )
+                key = base64.urlsafe_b64encode(kdf.derive(passphrase.encode()))
                 self.log_event(
-                    "INFO", "Generated new encryption key for password storage")
+                    "INFO", "Derived encryption key from passphrase")
                 return key
 
-        except Exception as e:
-            # Fallback to in-memory key (less secure but functional)
+            # Fallback: generate new key and warn about security
+            key = Fernet.generate_key()
             self.log_event(
-                "WARNING", f"Failed to manage encryption key file, using in-memory key: {e}")
+                "WARNING",
+                "No encryption key or passphrase found in environment variables. "
+                "Using temporary in-memory key. Set CERT_ME_BOI_ENCRYPTION_KEY or "
+                "CERT_ME_BOI_PASSPHRASE environment variable for persistent encryption."
+            )
+            return key
+
+        except Exception as e:
+            # Ultimate fallback to in-memory key
+            self.log_event(
+                "ERROR", f"Failed to get encryption key, using temporary in-memory key: {e}")
             return Fernet.generate_key()
 
     def _encrypt_password(self, password: str) -> str:

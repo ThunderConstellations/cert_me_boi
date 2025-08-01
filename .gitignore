@@ -189,6 +189,16 @@ user_data.json
 *.private
 *.personal
 
+# Encryption keys and cryptographic material
+*.key
+*.pem
+*.p12
+*.pfx
+config/.encryption_key
+config/*.key
+config/keys/
+*.encryption_key
+
 # AI and development traces (hide AI assistance)
 .cursor/
 .specstory/

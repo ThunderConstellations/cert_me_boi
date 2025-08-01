@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Screenshot capture and analysis
 - Multi-model AI support (DeepSeek, Claude, GPT-4)
 - Comprehensive logging and metrics collection
+
+### Changed
+- Refactored platform discovery hardcoded certification catalog to external YAML configuration file (config/certifications.yaml) for improved maintainability
 - Configuration management system
 - Certificate download and storage
 - Screen detection for course information

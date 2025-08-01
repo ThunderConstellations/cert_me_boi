@@ -30,34 +30,23 @@ class CourseAutomation:
             'element_wait': timeouts_config.get('element_wait', 3000)
         }
 
-        # Platform-specific handlers
+        # Platforms that use generic handling
+        self.generic_platforms = {
+            'huggingface', 'university_helsinki', 'upgrad', 'ibm_skills',
+            'matlab_onramp', 'cisco_netacad', 'saylor_academy', 'stepik',
+            'complexity_explorer', 'hubspot_academy', 'wolfram_u',
+            'semrush_academy', 'codesignal', 'open_university',
+            'stanford_medicine', 'edraak', 'openhpi', 'edx', 'coursera', 'udemy'
+        }
+
+        # Platform-specific handlers (only for platforms with custom implementations)
         self.platform_handlers = {
             'freecodecamp': self._handle_freecodecamp,
             'hackerrank': self._handle_hackerrank,
             'harvard_cs50': self._handle_harvard_cs50,
-            'huggingface': self._handle_huggingface,
             'kaggle': self._handle_kaggle,
-            'university_helsinki': self._handle_university_helsinki,
-            'upgrad': self._handle_upgrad,
-            'ibm_skills': self._handle_ibm_skills,
-            'matlab_onramp': self._handle_matlab_onramp,
             'google_skillshop': self._handle_google_skillshop,
-            'microsoft_learn': self._handle_microsoft_learn,
-            'cisco_netacad': self._handle_cisco_netacad,
-            'saylor_academy': self._handle_saylor_academy,
-            'stepik': self._handle_stepik,
-            'complexity_explorer': self._handle_complexity_explorer,
-            'hubspot_academy': self._handle_hubspot_academy,
-            'wolfram_u': self._handle_wolfram_u,
-            'semrush_academy': self._handle_semrush_academy,
-            'codesignal': self._handle_codesignal,
-            'open_university': self._handle_open_university,
-            'stanford_medicine': self._handle_stanford_medicine,
-            'edraak': self._handle_edraak,
-            'openhpi': self._handle_openhpi,
-            'edx': self._handle_edx,
-            'coursera': self._handle_coursera,
-            'udemy': self._handle_udemy
+            'microsoft_learn': self._handle_microsoft_learn
         }
 
     def _load_config(self, config_path: str) -> Dict[str, Any]:
@@ -83,13 +72,16 @@ class CourseAutomation:
             if credentials:
                 login_success = await self._login(page, platform, credentials)
                 if not login_success:
-                    logger.error(
-                        f"Login failed for {platform}, aborting automation")
-                    return False
+                    error_msg = f"Login failed for {platform}, aborting automation"
+                    logger.error(error_msg)
+                    raise RuntimeError(
+                        f"Authentication failed for platform '{platform}'. Cannot proceed with automation on authenticated pages without valid login.")
 
-            # Use platform-specific handler
+            # Use platform-specific handler or generic handler
             if platform in self.platform_handlers:
                 return await self.platform_handlers[platform](page, course_url)
+            elif platform in self.generic_platforms or platform not in self.platform_handlers:
+                return await self._handle_generic_platform(page, course_url)
             else:
                 return await self._handle_generic_platform(page, course_url)
 
@@ -448,67 +440,7 @@ class CourseAutomation:
             logger.error(f"Assessment handling failed: {e}")
             return False
 
-    # Placeholder handlers for remaining platforms
-    async def _handle_huggingface(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_university_helsinki(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_upgrad(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_ibm_skills(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_matlab_onramp(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_cisco_netacad(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_saylor_academy(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_stepik(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_complexity_explorer(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_hubspot_academy(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_wolfram_u(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_semrush_academy(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_codesignal(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_open_university(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_stanford_medicine(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_edraak(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_openhpi(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_edx(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_coursera(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
-    async def _handle_udemy(self, page: Page, course_url: str) -> bool:
-        return await self._handle_generic_platform(page, course_url)
-
+    # Generic handler for platforms without specific implementation
     async def _handle_generic_platform(self, page: Page, course_url: str) -> bool:
         """Generic handler for platforms without specific implementation"""
         try:
@@ -540,9 +472,8 @@ class CourseAutomation:
                 await page.wait_for_timeout(self.timeouts['default'])
 
             return True
-
         except Exception as e:
-            logger.error(f"Generic platform handler failed: {e}")
+            logger.error(f"Generic platform handling failed: {e}")
             return False
 
     async def get_certificate(self, page: Page) -> Optional[str]:

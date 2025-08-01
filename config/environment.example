@@ -1,0 +1,20 @@
+# Cert Me Boi Environment Configuration Example
+# Copy this file to .env and set your values
+
+# SECURITY: Encryption Configuration
+# Choose ONE of the following options for encryption:
+
+# Option 1: Direct encryption key (base64 encoded)
+# Generate a new key with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+#CERT_ME_BOI_ENCRYPTION_KEY=your_base64_encoded_key_here
+
+# Option 2: Passphrase (will be used to derive encryption key)
+# Use a strong passphrase - this will be used with PBKDF2 to derive the encryption key
+#CERT_ME_BOI_PASSPHRASE=your_strong_passphrase_here
+
+# OpenRouter API Configuration (if using AI features)
+#OPENROUTER_API_KEY=your_openrouter_api_key_here
+
+# Other configuration options
+#LOG_LEVEL=INFO
+#DEBUG_MODE=false 

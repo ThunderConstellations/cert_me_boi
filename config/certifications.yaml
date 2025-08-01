@@ -1,0 +1,224 @@
+# Certification Catalog Configuration
+# Contains all supported certification opportunities across platforms
+
+freecodecamp:
+  - title: "Responsive Web Design"
+    category: "Web Development"
+    difficulty: "Beginner"
+    duration: "300 hours"
+    skills:
+      - "HTML"
+      - "CSS"
+      - "Flexbox"
+      - "Grid"
+    certificate_type: "Full Certification"
+    value_score: 95
+
+  - title: "JavaScript Algorithms and Data Structures"
+    category: "Programming"
+    difficulty: "Intermediate"
+    duration: "300 hours"
+    skills:
+      - "JavaScript"
+      - "ES6"
+      - "Algorithms"
+      - "Data Structures"
+    certificate_type: "Full Certification"
+    value_score: 98
+
+  - title: "Front End Development Libraries"
+    category: "Web Development"
+    difficulty: "Intermediate"
+    duration: "300 hours"
+    skills:
+      - "React"
+      - "Redux"
+      - "Bootstrap"
+      - "jQuery"
+    certificate_type: "Full Certification"
+    value_score: 92
+
+  - title: "Data Visualization"
+    category: "Data Science"
+    difficulty: "Intermediate"
+    duration: "300 hours"
+    skills:
+      - "D3.js"
+      - "JSON"
+      - "APIs"
+    certificate_type: "Full Certification"
+    value_score: 88
+
+google_skillshop:
+  - title: "Google Analytics Individual Qualification"
+    category: "Digital Marketing"
+    difficulty: "Beginner"
+    duration: "4-6 hours"
+    skills:
+      - "Google Analytics"
+      - "Web Analytics"
+      - "Data Analysis"
+    certificate_type: "Professional Certification"
+    value_score: 90
+
+  - title: "Google Ads Search Certification"
+    category: "Digital Marketing"
+    difficulty: "Intermediate"
+    duration: "3-5 hours"
+    skills:
+      - "Google Ads"
+      - "SEM"
+      - "Keyword Research"
+    certificate_type: "Professional Certification"
+    value_score: 92
+
+  - title: "Google Cloud Digital Leader"
+    category: "Cloud Computing"
+    difficulty: "Beginner"
+    duration: "10-15 hours"
+    skills:
+      - "Cloud Computing"
+      - "Google Cloud Platform"
+      - "Digital Transformation"
+    certificate_type: "Professional Certification"
+    value_score: 94
+
+microsoft_learn:
+  - title: "Azure Fundamentals (AZ-900)"
+    category: "Cloud Computing"
+    difficulty: "Beginner"
+    duration: "15-20 hours"
+    skills:
+      - "Azure"
+      - "Cloud Services"
+      - "Cloud Economics"
+    certificate_type: "Microsoft Certification"
+    value_score: 96
+
+  - title: "Power Platform Fundamentals"
+    category: "Business Applications"
+    difficulty: "Beginner"
+    duration: "10-15 hours"
+    skills:
+      - "Power BI"
+      - "Power Apps"
+      - "Power Automate"
+    certificate_type: "Microsoft Certification"
+    value_score: 85
+
+ibm_skills:
+  - title: "IBM Data Science Professional Certificate"
+    category: "Data Science"
+    difficulty: "Intermediate"
+    duration: "100+ hours"
+    skills:
+      - "Python"
+      - "Machine Learning"
+      - "Data Analysis"
+      - "SQL"
+    certificate_type: "Professional Certificate"
+    value_score: 94
+
+  - title: "IBM AI Engineering Professional Certificate"
+    category: "Artificial Intelligence"
+    difficulty: "Advanced"
+    duration: "120+ hours"
+    skills:
+      - "Machine Learning"
+      - "Deep Learning"
+      - "TensorFlow"
+      - "Keras"
+    certificate_type: "Professional Certificate"
+    value_score: 96
+
+kaggle:
+  - title: "Python"
+    category: "Programming"
+    difficulty: "Beginner"
+    duration: "7 hours"
+    skills:
+      - "Python Programming"
+      - "Data Types"
+      - "Functions"
+    certificate_type: "Micro-Course Certificate"
+    value_score: 80
+
+  - title: "Machine Learning"
+    category: "Data Science"
+    difficulty: "Intermediate"
+    duration: "7 hours"
+    skills:
+      - "Scikit-learn"
+      - "Model Selection"
+      - "Validation"
+    certificate_type: "Micro-Course Certificate"
+    value_score: 85
+
+hackerrank:
+  - title: "Python (Basic)"
+    category: "Programming"
+    difficulty: "Beginner"
+    duration: "1 hour"
+    skills:
+      - "Python Basics"
+      - "Data Structures"
+      - "Algorithms"
+    certificate_type: "Skills Verification"
+    value_score: 75
+
+  - title: "SQL (Advanced)"
+    category: "Database"
+    difficulty: "Advanced"
+    duration: "1.5 hours"
+    skills:
+      - "Advanced SQL"
+      - "Complex Queries"
+      - "Database Optimization"
+    certificate_type: "Skills Verification"
+    value_score: 82
+
+cisco_netacad:
+  - title: "Introduction to Cybersecurity"
+    category: "Cybersecurity"
+    difficulty: "Beginner"
+    duration: "15 hours"
+    skills:
+      - "Cybersecurity Fundamentals"
+      - "Network Security"
+      - "Risk Management"
+    certificate_type: "Course Completion"
+    value_score: 88
+
+  - title: "CCNA: Introduction to Networks"
+    category: "Networking"
+    difficulty: "Intermediate"
+    duration: "70 hours"
+    skills:
+      - "Network Fundamentals"
+      - "OSI Model"
+      - "TCP/IP"
+    certificate_type: "Course Completion"
+    value_score: 92
+
+hubspot_academy:
+  - title: "Inbound Marketing Certification"
+    category: "Digital Marketing"
+    difficulty: "Intermediate"
+    duration: "4.5 hours"
+    skills:
+      - "Inbound Marketing"
+      - "Content Marketing"
+      - "Lead Generation"
+    certificate_type: "Professional Certification"
+    value_score: 87
+
+  - title: "Content Marketing Certification"
+    category: "Digital Marketing"
+    difficulty: "Intermediate"
+    duration: "4 hours"
+    skills:
+      - "Content Strategy"
+      - "Content Creation"
+      - "Content Distribution"
+    certificate_type: "Professional Certification"
+    value_score: 85
