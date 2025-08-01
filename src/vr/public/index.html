@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🥽 Cert Me Boi - VR Learning Portal</title>
+    
+    <!-- A-Frame and Dependencies -->
+    <script src="https://cdn.aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.aframe.io/releases/1.4.0/aframe-extras.min.js"></script>
+    <script src="https://cdn.rawgit.com/supermedium/aframe-environment-component/master/dist/aframe-environment-component.min.js"></script>
+    <script src="https://cdn.rawgit.com/supermedium/aframe-gui/master/dist/aframe-gui.min.js"></script>
+    <script src="https://cdn.rawgit.com/supermedium/aframe-teleport-controls/master/dist/aframe-teleport-controls.min.js"></script>
+    
+    <!-- WebXR Polyfill -->
+    <script src="https://cdn.jsdelivr.net/npm/webxr-polyfill@2.0.3/build/webxr-polyfill.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        body {
+            margin: 0;
+            font-family: 'Orbitron', monospace;
+            background: linear-gradient(135deg, #0a0a23 0%, #1a1a3e 50%, #2a1810 100%);
+            color: #FFD700;
+            overflow-x: hidden;
+        }
+        
+        .portal-header {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid #FFD700;
+        }
+        
+        .portal-title {
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #FFD700, #87CEEB, #FFFFFF);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s ease-in-out infinite;
+            margin-bottom: 1rem;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .portal-subtitle {
+            font-size: 1.2rem;
+            color: #87CEEB;
+            margin-bottom: 2rem;
+        }
+        
+        .environments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .environment-card {
+            background: linear-gradient(145deg, rgba(26, 26, 62, 0.9), rgba(42, 24, 16, 0.9));
+            border: 2px solid #FFD700;
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .environment-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(255, 215, 0, 0.3);
+            border-color: #87CEEB;
+        }
+        
+        .environment-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+        
+        .environment-card:hover::before {
+            opacity: 1;
+            animation: shine 1s ease-in-out;
+        }
+        
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .card-icon {
+            font-size: 2rem;
+            margin-right: 1rem;
+        }
+        
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #FFD700;
+        }
+        
+        .card-description {
+            color: #FFFFFF;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        
+        .card-skills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .skill-tag {
+            background: rgba(135, 206, 235, 0.2);
+            color: #87CEEB;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            border: 1px solid #87CEEB;
+        }
+        
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .difficulty {
+            padding: 0.3rem 0.8rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .difficulty.beginner { background: rgba(76, 175, 80, 0.2); color: #4CAF50; }
+        .difficulty.intermediate { background: rgba(255, 193, 7, 0.2); color: #FFC107; }
+        .difficulty.advanced { background: rgba(244, 67, 54, 0.2); color: #F44336; }
+        
+        .duration {
+            color: #87CEEB;
+            font-size: 0.9rem;
+        }
+        
+        .enter-vr-btn {
+            background: linear-gradient(45deg, #FFD700, #87CEEB);
+            color: #000;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            width: 100%;
+            font-size: 1rem;
+        }
+        
+        .enter-vr-btn:hover {
+            background: linear-gradient(45deg, #87CEEB, #FFD700);
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+        }
+        
+        .vr-status {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid #FFD700;
+            color: #FFD700;
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .vr-supported {
+            color: #4CAF50;
+        }
+        
+        .vr-not-supported {
+            color: #F44336;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: #FFD700;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 215, 0, 0.3);
+            border-top: 3px solid #FFD700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .portal-title { font-size: 2rem; }
+            .environments-grid { 
+                grid-template-columns: 1fr; 
+                padding: 1rem;
+            }
+            .environment-card { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="portal-header">
+        <h1 class="portal-title">🥽 VR Learning Portal</h1>
+        <p class="portal-subtitle">Immersive Certification Training in Virtual Reality</p>
+    </div>
+    
+    <div class="environments-grid" id="environmentsGrid">
+        <!-- Environments will be loaded dynamically -->
+    </div>
+    
+    <div class="vr-status" id="vrStatus">
+        Checking VR support...
+    </div>
+    
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3>Loading VR Environment...</h3>
+            <p>Preparing your immersive learning experience</p>
+        </div>
+    </div>
+
+    <script>
+        class VRPortal {
+            constructor() {
+                this.checkVRSupport();
+                this.loadEnvironments();
+                this.setupEventListeners();
+            }
+            
+            async checkVRSupport() {
+                const statusEl = document.getElementById('vrStatus');
+                
+                if ('xr' in navigator) {
+                    try {
+                        const isSupported = await navigator.xr.isSessionSupported('immersive-vr');
+                        if (isSupported) {
+                            statusEl.innerHTML = '<span class="vr-supported">✓ VR Ready</span>';
+                            statusEl.classList.add('vr-supported');
+                        } else {
+                            statusEl.innerHTML = '<span class="vr-not-supported">⚠ VR Not Available</span>';
+                            statusEl.classList.add('vr-not-supported');
+                        }
+                    } catch (e) {
+                        statusEl.innerHTML = '<span class="vr-not-supported">⚠ WebXR Error</span>';
+                        statusEl.classList.add('vr-not-supported');
+                    }
+                } else {
+                    statusEl.innerHTML = '<span class="vr-not-supported">⚠ WebXR Not Supported</span>';
+                    statusEl.classList.add('vr-not-supported');
+                }
+            }
+            
+            async loadEnvironments() {
+                try {
+                    const response = await fetch('/api/environments');
+                    const data = await response.json();
+                    
+                    this.renderEnvironments(data.environments);
+                } catch (error) {
+                    console.error('Failed to load environments:', error);
+                    this.showError('Failed to load VR environments');
+                }
+            }
+            
+            renderEnvironments(environments) {
+                const grid = document.getElementById('environmentsGrid');
+                grid.innerHTML = '';
+                
+                const icons = {
+                    'networking-lab': '🌐',
+                    'programming-space': '💻',
+                    'data-center': '🏢',
+                    'security-lab': '🔒',
+                    'ai-workshop': '🤖'
+                };
+                
+                environments.forEach(env => {
+                    const card = document.createElement('div');
+                    card.className = 'environment-card';
+                    card.onclick = () => this.enterEnvironment(env.id);
+                    
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <div class="card-icon">${icons[env.id] || '🎓'}</div>
+                            <div class="card-title">${env.title}</div>
+                        </div>
+                        <div class="card-description">${env.description}</div>
+                        <div class="card-skills">
+                            ${env.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                        </div>
+                        <div class="card-meta">
+                            <span class="difficulty ${env.difficulty}">${env.difficulty}</span>
+                            <span class="duration">⏱ ${env.duration}</span>
+                        </div>
+                        <button class="enter-vr-btn">Enter VR Environment</button>
+                    `;
+                    
+                    grid.appendChild(card);
+                });
+            }
+            
+            async enterEnvironment(environmentId) {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.style.display = 'flex';
+                
+                try {
+                    // Create VR session
+                    const sessionResponse = await fetch('/api/sessions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            environmentId,
+                            userId: this.getUserId(),
+                            settings: {
+                                comfort: 'comfortable',
+                                difficulty: 'auto'
+                            }
+                        })
+                    });
+                    
+                    const sessionData = await sessionResponse.json();
+                    
+                    // Redirect to VR scene
+                    setTimeout(() => {
+                        window.location.href = `/vr/${environmentId}.html?session=${sessionData.session.id}`;
+                    }, 2000);
+                    
+                } catch (error) {
+                    console.error('Failed to enter VR environment:', error);
+                    loadingOverlay.style.display = 'none';
+                    this.showError('Failed to start VR session');
+                }
+            }
+            
+            getUserId() {
+                // Get or generate user ID
+                let userId = localStorage.getItem('vr_user_id');
+                if (!userId) {
+                    userId = 'user_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('vr_user_id', userId);
+                }
+                return userId;
+            }
+            
+            showError(message) {
+                alert(message); // In production, use a proper notification system
+            }
+            
+            setupEventListeners() {
+                // Handle page visibility changes
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        // Pause VR if page becomes hidden
+                        console.log('Page hidden, pausing VR activities');
+                    } else {
+                        // Resume VR when page becomes visible
+                        console.log('Page visible, resuming VR activities');
+                    }
+                });
+                
+                // Handle orientation changes for mobile VR
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(() => {
+                        // Recalibrate VR display after orientation change
+                        console.log('Orientation changed, recalibrating VR');
+                    }, 500);
+                });
+            }
+        }
+        
+        // Initialize VR Portal when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new VRPortal();
+        });
+        
+        // Add some particle effects for visual enhancement
+        function createParticles() {
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'fixed';
+                particle.style.width = '2px';
+                particle.style.height = '2px';
+                particle.style.background = '#FFD700';
+                particle.style.borderRadius = '50%';
+                particle.style.pointerEvents = 'none';
+                particle.style.opacity = Math.random();
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animation = `float ${3 + Math.random() * 4}s linear infinite`;
+                document.body.appendChild(particle);
+                
+                // Remove particle after animation
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        particle.parentNode.removeChild(particle);
+                    }
+                }, 7000);
+            }
+        }
+        
+        // Add floating particle animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes float {
+                0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+                10% { opacity: 1; }
+                90% { opacity: 1; }
+                100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Create particles every few seconds
+        setInterval(createParticles, 3000);
+        createParticles(); // Initial particles
+    </script>
+</body>
+</html> 

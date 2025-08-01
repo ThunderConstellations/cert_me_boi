@@ -1,0 +1,57 @@
+FROM python:3.13-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Set work directory
+WORKDIR /app
+
+# Install system dependencies for web scraping and NLP
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    build-essential \
+    libxml2-dev \
+    libxslt1-dev \
+    zlib1g-dev \
+    libffi-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir \
+        beautifulsoup4 \
+        scrapy \
+        selenium \
+        scikit-learn \
+        nltk \
+        spacy \
+        requests-html \
+        newspaper3k
+
+# Download NLTK and spaCy data
+RUN python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords'); nltk.download('vader_lexicon')" && \
+    python -c "import spacy; spacy.cli.download('en_core_web_sm')"
+
+# Copy application code
+COPY . .
+
+# Create data directories
+RUN mkdir -p data/discovery logs/discovery
+
+# Health check
+HEALTHCHECK --interval=60s --timeout=30s --start-period=120s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8002/health')" || exit 1
+
+# Expose port for API
+EXPOSE 8002
+
+# Default command
+CMD ["python", "-m", "src.discovery.content_discovery_service"] 

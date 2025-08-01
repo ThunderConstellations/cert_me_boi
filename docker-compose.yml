@@ -1,0 +1,184 @@
+version: "3.8"
+
+services:
+  # Main Cert Me Boi Application
+  cert-me-boi:
+    build: .
+    container_name: cert-me-boi-app
+    ports:
+      - "8501:8501"
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql://certuser:certpass@postgres:5432/certmedb
+      - REDIS_URL=redis://redis:6379/0
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - cert-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # PostgreSQL Database for advanced data storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: cert-me-boi-db
+    environment:
+      - POSTGRES_DB=certmedb
+      - POSTGRES_USER=certuser
+      - POSTGRES_PASSWORD=certpass
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - cert-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U certuser -d certmedb"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: cert-me-boi-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./docker/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: unless-stopped
+    networks:
+      - cert-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Smart Content Discovery Service
+  content-discovery:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.discovery
+    container_name: cert-me-boi-discovery
+    environment:
+      - DATABASE_URL=postgresql://certuser:certpass@postgres:5432/certmedb
+      - REDIS_URL=redis://redis:6379/1
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - cert-network
+    command: ["python", "-m", "src.discovery.content_discovery_service"]
+
+  # VR Learning Service
+  vr-learning:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.vr
+    container_name: cert-me-boi-vr
+    ports:
+      - "3000:3000" # VR web interface
+      - "8080:8080" # VR WebSocket server
+    environment:
+      - NODE_ENV=production
+      - VR_SERVER_PORT=8080
+      - WEB_PORT=3000
+    volumes:
+      - ./data/vr:/app/vr-content
+    restart: unless-stopped
+    networks:
+      - cert-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: cert-me-boi-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/ssl:/etc/nginx/ssl
+    depends_on:
+      - cert-me-boi
+      - vr-learning
+    restart: unless-stopped
+    networks:
+      - cert-network
+
+  # Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cert-me-boi-metrics
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+    restart: unless-stopped
+    networks:
+      - cert-network
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cert-me-boi-dashboard
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=certmeboi123
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - cert-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  cert-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
