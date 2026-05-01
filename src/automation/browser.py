@@ -1,5 +1,7 @@
 """Browser automation module"""
 
+import random
+import time
 from typing import Optional, Dict, Any
 from pathlib import Path
 import yaml
@@ -14,7 +16,7 @@ def log_automation_event(event_type: str, **kwargs) -> None:
     log_event(event_type, kwargs, level='INFO')
 
 class BrowserAutomation:
-    """Browser automation using Playwright"""
+    """Browser automation using Playwright with human-like interaction"""
 
     def __init__(self, config_path: str = "config/courses.yaml"):
         self.config = self._load_config(config_path)
@@ -67,9 +69,14 @@ class BrowserAutomation:
         except Exception as e:
             log_error_with_context(e, "Failed to clean up browser")
 
+    def _human_delay(self, min_delay: float = 0.5, max_delay: float = 2.0):
+        """Simulate human-like delay between actions"""
+        time.sleep(random.uniform(min_delay, max_delay))
+
     def navigate(self, url: str) -> bool:
-        """Navigate to URL"""
+        """Navigate to URL with human-like delay"""
         try:
+            self._human_delay(1.0, 3.0)
             self.page.goto(url, timeout=self.config['browser']['timeout'] * 1000)
             log_automation_event("page_loaded", url=url)
             return True
@@ -78,21 +85,35 @@ class BrowserAutomation:
             return False
 
     def click_element(self, selector: str) -> bool:
-        """Click element by selector"""
+        """Click element by selector with simulated mouse movement"""
         try:
-            self.page.click(selector, timeout=self.config['browser']['timeout'] * 1000)
-            log_automation_event("element_clicked", selector=selector)
-            return True
+            self._human_delay(0.5, 1.5)
+            # Find element and hover over it first (mimics mouse movement)
+            element = self.page.wait_for_selector(selector)
+            if element:
+                element.hover()
+                self._human_delay(0.2, 0.5)
+                element.click()
+                log_automation_event("element_clicked", selector=selector)
+                return True
+            return False
         except Exception as e:
             log_error_with_context(e, f"Failed to click element {selector}")
             return False
 
     def fill_input(self, selector: str, value: str) -> bool:
-        """Fill input field"""
+        """Fill input field with variable typing speed"""
         try:
-            self.page.fill(selector, value, timeout=self.config['browser']['timeout'] * 1000)
-            log_automation_event("input_filled", selector=selector)
-            return True
+            self._human_delay(0.5, 1.2)
+            element = self.page.wait_for_selector(selector)
+            if element:
+                element.click() # Focus first
+                for char in value:
+                    self.page.keyboard.type(char)
+                    time.sleep(random.uniform(0.05, 0.25)) # Variable typing speed
+                log_automation_event("input_filled", selector=selector)
+                return True
+            return False
         except Exception as e:
             log_error_with_context(e, f"Failed to fill input {selector}")
             return False
@@ -149,4 +170,4 @@ class BrowserAutomation:
             return True
         except Exception as e:
             log_error_with_context(e, f"Failed to download certificate from {url}")
-            return False 
+            return False

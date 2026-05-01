@@ -2,14 +2,15 @@
 
 import argparse
 import sys
+import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 import yaml
-from playwright.sync_api import sync_playwright
 from src.automation.browser import BrowserAutomation
 from src.automation.course_automation import CourseAutomation
 from src.monitor.screen_monitor import ScreenMonitor
 from src.utils.logger import logger
+from src.utils.persistence import DatabaseManager
 from src.utils.error_handler import AutomationError
 from src.utils.recovery_manager import RecoveryManager
 from src.utils.metrics_collector import MetricsCollector
@@ -53,7 +54,7 @@ def setup_components(config: Dict[str, Any]) -> tuple:
             module="main",
             error=str(e)
         )
-        sys.exit(1)
+        raise
 
 def cleanup_components(*components) -> None:
     """Clean up automation components"""
@@ -73,65 +74,61 @@ def process_course(
     browser: BrowserAutomation,
     course: CourseAutomation,
     monitor: ScreenMonitor,
+    recovery: RecoveryManager,
     url: str,
+    platform: str,
     email: str,
     password: str
 ) -> bool:
-    """Process a single course"""
+    """Process a single course with recovery support"""
+    start_time = time.time()
     try:
-        # Start browser session
-        if not browser.start():
-            raise AutomationError("Failed to start browser")
+        # Start browser session if not already running
+        if not browser.page:
+            if not browser.start():
+                raise AutomationError("Failed to start browser")
 
         # Set up course page
         course.set_page(browser.page)
 
-        # Log in to course
-        if not course.login_to_course(url, email, password):
-            raise AutomationError("Failed to log in")
-
-        # Monitor course progress
-        progress = course.check_course_progress()
-        logger.info(
-            "Course progress",
-            module="main",
-            progress=progress
+        # Run core automation logic
+        credentials = {"email": email, "password": password}
+        success = course.start_automation(
+            browser.page,
+            platform,
+            url,
+            credentials
         )
 
-        # Verify video completion
-        if not course.verify_video_completion(url):
-            logger.warning(
-                "Video not completed",
-                module="main",
-                url=url
-            )
-            return False
+        # Post-automation: attempt to get certificate if successful
+        if success:
+            logger.info("Automation successful, checking for certificate...", module="main")
+            cert_path = course.download_certificate("latest")
+            if cert_path:
+                logger.info(f"Certificate secured at: {cert_path}", module="main")
 
-        # Download certificate if available
-        cert_path = course.download_certificate("course123")
-        if cert_path:
-            logger.info(
-                "Certificate downloaded",
-                module="main",
-                path=cert_path
-            )
-            return True
-        return False
+        return success
 
     except Exception as e:
-        logger.error(
-            "Failed to process course",
-            module="main",
-            url=url,
-            error=str(e)
-        )
+        logger.error(f"Error during course processing: {e}", module="main", url=url)
+        # Attempt recovery if possible
+        try:
+             logger.info("Attempting recovery...", module="main")
+             recovery.attempt_recovery()
+             # Optionally retry processing here, but for now just report failure
+        except Exception as rec_err:
+             logger.error(f"Recovery failed: {rec_err}", module="main")
         return False
+    finally:
+        duration = time.time() - start_time
+        logger.info(f"Finished processing {url} in {duration:.2f}s", module="main")
 
 class CertificationAutomation:
-    """Main certification automation class for GUI integration"""
+    """Main certification automation class for GUI and CLI integration"""
     
     def __init__(self, config_path: str = "config/courses.yaml"):
         self.config = load_config(config_path)
+        self.db = DatabaseManager()
         self.browser = None
         self.course = None
         self.monitor = None
@@ -140,40 +137,58 @@ class CertificationAutomation:
         self._setup_components()
     
     def _setup_components(self):
-        """Set up automation components"""
+        """Set up and initialize automation components"""
         try:
             self.browser, self.course, self.monitor, self.recovery, self.metrics = setup_components(self.config)
         except Exception as e:
             logger.error(f"Failed to setup components: {e}", module="main")
             raise
     
-    def start_automation(self, platform: str, credentials: Dict[str, str]) -> bool:
-        """Start automation for a course"""
-        try:
-            url = credentials.get('course_url', '')
-            email = credentials.get('email', '')
-            password = credentials.get('password', '')
-            
-            logger.info(f"Starting automation for platform: {platform}", module="main")
-            
-            # Process the course
-            success = process_course(
-                self.browser,
-                self.course,
-                self.monitor,
-                url,
-                email,
-                password
-            )
-            
-            return success
-            
-        except Exception as e:
-            logger.error(f"Automation failed: {e}", module="main")
-            return False
-    
+    def run_multi_course(self, urls: List[str], platform: str, credentials: Dict[str, str]) -> bool:
+        """Run automation for multiple courses"""
+        overall_success = True
+        for url in urls:
+            try:
+                logger.info(f"Starting automation for: {url}", module="main")
+                self.db.update_course_status(url, platform, "STARTED")
+
+                success = process_course(
+                    self.browser,
+                    self.course,
+                    self.monitor,
+                    self.recovery,
+                    url,
+                    platform,
+                    credentials.get('email', ''),
+                    credentials.get('password', '')
+                )
+
+                # Record metrics
+                self.metrics.record_operation(
+                    "course_automation",
+                    "process_course",
+                    success,
+                    0.0  # Duration placeholder
+                )
+
+                status = "COMPLETED" if success else "FAILED"
+                self.db.update_course_status(url, platform, status)
+
+                if success:
+                    logger.info(f"Course processing completed successfully for: {url}")
+                else:
+                    logger.error(f"Course processing failed for: {url}")
+                    overall_success = False
+
+            except Exception as e:
+                logger.error(f"Unhandled error processing {url}: {e}", module="main")
+                self.db.update_course_status(url, platform, "FAILED")
+                overall_success = False
+
+        return overall_success
+
     def stop_automation(self):
-        """Stop automation"""
+        """Stop and cleanup all components"""
         try:
             logger.info("Stopping automation", module="main")
             cleanup_components(self.browser, self.course, self.monitor, self.recovery, self.metrics)
@@ -182,63 +197,33 @@ class CertificationAutomation:
     
     def cleanup(self):
         """Clean up resources"""
-        try:
-            self.stop_automation()
-        except Exception as e:
-            logger.error(f"Cleanup failed: {e}", module="main")
+        self.stop_automation()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cleanup()
 
 def main():
-    """Main entry point"""
+    """Main entry point for CLI usage"""
     parser = argparse.ArgumentParser(description="Course automation script")
     parser.add_argument("--config", default="config/courses.yaml", help="Path to config file")
-    parser.add_argument("--url", required=True, help="Course URL")
+    parser.add_argument("--urls", required=True, help="Course URLs (comma-separated)")
     parser.add_argument("--email", required=True, help="Login email")
     parser.add_argument("--password", required=True, help="Login password")
+    parser.add_argument("--platform", default="generic", help="Platform name")
     args = parser.parse_args()
 
-    # Load configuration
-    config = load_config(args.config)
+    urls = [url.strip() for url in args.urls.split(",")]
+    credentials = {"email": args.email, "password": args.password}
 
-    # Set up components
-    browser, course, monitor, recovery, metrics = setup_components(config)
-
-    try:
-        # Process course
-        success = process_course(
-            browser,
-            course,
-            monitor,
-            args.url,
-            args.email,
-            args.password
-        )
-
-        # Record metrics
-        metrics.record_operation(
-            "course_automation",
-            "process_course",
-            success,
-            0.0  # Duration placeholder
-        )
-
+    with CertificationAutomation(args.config) as automation:
+        success = automation.run_multi_course(urls, args.platform, credentials)
         if success:
-            logger.info("Course processing completed successfully")
             sys.exit(0)
         else:
-            logger.error("Course processing failed")
             sys.exit(1)
 
-    except Exception as e:
-        logger.error(
-            "Unhandled error",
-            module="main",
-            error=str(e)
-        )
-        sys.exit(1)
-
-    finally:
-        # Clean up components
-        cleanup_components(browser, course, monitor, recovery, metrics)
-
 if __name__ == "__main__":
-    main() 
+    main()

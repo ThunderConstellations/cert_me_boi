@@ -7,6 +7,18 @@ class AutomationError(Exception):
     """Base exception for automation errors"""
     pass
 
+class BrowserError(AutomationError):
+    """Exception for browser automation errors"""
+    pass
+
+class AIError(AutomationError):
+    """Exception for AI model errors"""
+    pass
+
+class NetworkError(AutomationError):
+    """Exception for network-related errors"""
+    pass
+
 class MonitorError(AutomationError):
     """Exception for video monitoring errors"""
     pass
@@ -150,7 +162,7 @@ def handle_automation_error(func: F) -> F:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             return func(*args, **kwargs)
-        except AutomationError:
+        except AutomationError as e:
             # Log and re-raise automation errors
             logger.error(
                 "Automation error",

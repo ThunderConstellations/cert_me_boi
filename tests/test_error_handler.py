@@ -86,12 +86,12 @@ def test_safe_monitor_operation_opencv_error():
     class MockOpenCVError(Exception):
         __module__ = 'cv2'
     
-    mock_func = Mock(side_effect=MockOpenCVError("OpenCV error"))
-    decorated = safe_monitor_operation(mock_func)
+    @safe_monitor_operation
+    def mock_op():
+        raise MockOpenCVError("OpenCV error")
     
-    with pytest.raises(MonitorError, match="OpenCV error in mock"):
-        decorated()
-    assert mock_func.call_count == 1
+    with pytest.raises(MonitorError, match="OpenCV error in mock_op"):
+        mock_op()
 
 def test_safe_monitor_operation_other_error():
     """Test safe_monitor_operation decorator with other error"""
@@ -122,12 +122,12 @@ def test_handle_automation_error_automation_error():
 
 def test_handle_automation_error_other_error():
     """Test handle_automation_error decorator with other error"""
-    mock_func = Mock(side_effect=ValueError("Other error"))
-    decorated = handle_automation_error(mock_func)
+    @handle_automation_error
+    def mock_auto():
+        raise ValueError("Other error")
     
-    with pytest.raises(AutomationError, match="Unexpected error in mock"):
-        decorated()
-    assert mock_func.call_count == 1
+    with pytest.raises(AutomationError, match="Unexpected error in mock_auto"):
+        mock_auto()
 
 def test_retry_delay():
     """Test retry delay in retry_on_error decorator"""
@@ -159,5 +159,5 @@ def test_operation_timing():
         
         # Check that execution time was logged
         timing_call = mock_debug.call_args_list[1]
-        assert "execution_time" in timing_call[1]
-        assert timing_call[1]["execution_time"] >= 0.1 
+        assert "execution_time" in timing_call[1]["context"]
+        assert timing_call[1]["context"]["execution_time"] >= 0.1
