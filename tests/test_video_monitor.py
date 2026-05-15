@@ -152,15 +152,18 @@ def test_detect_progress_bar_no_bar(video_monitor, sample_frame):
 
 def test_verify_video_playing(video_monitor, sample_frame):
     """Test video playback verification"""
+    # Set blur threshold low for test
+    video_monitor.blur_threshold = 0.0
+
     # First frame
     video_monitor.analyze_frame(sample_frame)
     
     # Second frame with motion
     frame2 = sample_frame.copy()
-    frame2[:, :] = [255, 255, 255]  # Significant change
+    frame2 = cv2.bitwise_not(frame2) # Invert to ensure significant change
     is_playing = video_monitor.verify_video_playing(frame2)
     
-    assert isinstance(is_playing, bool)
+    assert bool(is_playing) is True
 
 def test_save_frame(video_monitor, sample_frame):
     """Test frame saving"""
@@ -205,12 +208,15 @@ def test_match_template_not_found(video_monitor, sample_frame):
 
 def test_match_template_no_match(video_monitor, sample_frame):
     """Test template matching when no match found"""
-    # Save template that won't match
-    template = np.zeros((20, 20, 3), dtype=np.uint8)
+    # Save template that won't match (random noise)
+    template = np.random.randint(0, 256, (20, 20, 3), dtype=np.uint8)
     template_path = video_monitor.template_dir / "test_template.png"
     cv2.imwrite(str(template_path), template)
     
-    result = video_monitor.match_template(sample_frame, "test_template")
+    # Use a frame that is just a solid color (shouldn't match noise)
+    solid_frame = np.zeros((100, 100, 3), dtype=np.uint8)
+
+    result = video_monitor.match_template(solid_frame, "test_template")
     assert result is None
 
 def test_match_template_with_scale(video_monitor, sample_frame):
@@ -229,4 +235,4 @@ def test_match_template_with_scale(video_monitor, sample_frame):
     assert result is not None
     assert isinstance(result, tuple)
     assert len(result) == 3
-    assert result[2] >= video_monitor.template_config['threshold'] 
+    assert result[2] >= video_monitor.config['template_matching']['threshold']

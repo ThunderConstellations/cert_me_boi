@@ -108,13 +108,13 @@ class VideoMonitor:
         # Convert to grayscale
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
+        # Calculate metrics
+        motion_detected = self._detect_motion(gray)
+
         # Update frame buffer
         if len(self.frame_buffer) >= self.buffer_size:
             self.frame_buffer.pop(0)
         self.frame_buffer.append(gray)
-        
-        # Calculate metrics
-        motion_detected = self._detect_motion(gray)
         brightness = np.mean(gray)
         contrast = np.std(gray)
         blur_score = self._calculate_blur(frame)
