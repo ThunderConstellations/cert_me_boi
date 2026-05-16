@@ -14,10 +14,13 @@ from src.utils.persistence import DatabaseManager
 from src.utils.error_handler import AutomationError
 from src.utils.recovery_manager import RecoveryManager
 from src.utils.metrics_collector import MetricsCollector
+from src.platform_discovery import PlatformDiscovery
 
 def load_config(config_path: str) -> Dict[str, Any]:
     """Load configuration from YAML file"""
     try:
+        if not Path(config_path).exists():
+             return {}
         with open(config_path, 'r') as f:
             return yaml.safe_load(f)
     except Exception as e:
@@ -26,7 +29,7 @@ def load_config(config_path: str) -> Dict[str, Any]:
             module="main",
             error=str(e)
         )
-        sys.exit(1)
+        return {}
 
 def setup_components(config: Dict[str, Any]) -> tuple:
     """Set up automation components"""
@@ -37,6 +40,7 @@ def setup_components(config: Dict[str, Any]) -> tuple:
         monitor = ScreenMonitor()
         recovery = RecoveryManager()
         metrics = MetricsCollector()
+        discovery = PlatformDiscovery()
 
         # Start metrics collection
         metrics.start_collection()
@@ -47,7 +51,7 @@ def setup_components(config: Dict[str, Any]) -> tuple:
             monitor_instance=monitor
         )
 
-        return browser, course, monitor, recovery, metrics
+        return browser, course, monitor, recovery, metrics, discovery
     except Exception as e:
         logger.error(
             "Failed to set up components",
@@ -115,7 +119,6 @@ def process_course(
         try:
              logger.info("Attempting recovery...", module="main")
              recovery.attempt_recovery()
-             # Optionally retry processing here, but for now just report failure
         except Exception as rec_err:
              logger.error(f"Recovery failed: {rec_err}", module="main")
         return False
@@ -134,16 +137,41 @@ class CertificationAutomation:
         self.monitor = None
         self.recovery = None
         self.metrics = None
+        self.discovery = None
         self._setup_components()
     
     def _setup_components(self):
         """Set up and initialize automation components"""
         try:
-            self.browser, self.course, self.monitor, self.recovery, self.metrics = setup_components(self.config)
+            (self.browser, self.course, self.monitor,
+             self.recovery, self.metrics, self.discovery) = setup_components(self.config)
         except Exception as e:
             logger.error(f"Failed to setup components: {e}", module="main")
             raise
     
+    def discover_free_courses(self, limit: int = 10):
+        """Find and display free certification opportunities"""
+        try:
+            print("\n🔍 Discovering Free Certification Opportunities...")
+            print("=" * 60)
+            opportunities = self.discovery.get_top_certifications(limit)
+
+            if not opportunities:
+                print("No opportunities found in catalog.")
+                return
+
+            for i, opt in enumerate(opportunities, 1):
+                print(f"{i}. [{opt.platform.upper()}] {opt.title}")
+                print(f"   Provider: {opt.provider}")
+                print(f"   Value Score: {opt.value_score}/100 | Difficulty: {opt.difficulty}")
+                print(f"   URL: {opt.url}")
+                print("-" * 60)
+
+            print(f"\nFound {len(opportunities)} high-value free certifications.")
+        except Exception as e:
+            logger.error(f"Discovery failed: {e}", module="main")
+            print(f"Error during discovery: {e}")
+
     def run_multi_course(self, urls: List[str], platform: str, credentials: Dict[str, str]) -> bool:
         """Run automation for multiple courses"""
         overall_success = True
@@ -191,7 +219,8 @@ class CertificationAutomation:
         """Stop and cleanup all components"""
         try:
             logger.info("Stopping automation", module="main")
-            cleanup_components(self.browser, self.course, self.monitor, self.recovery, self.metrics)
+            cleanup_components(self.browser, self.course, self.monitor,
+                             self.recovery, self.metrics, self.discovery)
         except Exception as e:
             logger.error(f"Failed to stop automation: {e}", module="main")
     
@@ -209,16 +238,26 @@ def main():
     """Main entry point for CLI usage"""
     parser = argparse.ArgumentParser(description="Course automation script")
     parser.add_argument("--config", default="config/courses.yaml", help="Path to config file")
-    parser.add_argument("--urls", required=True, help="Course URLs (comma-separated)")
-    parser.add_argument("--email", required=True, help="Login email")
-    parser.add_argument("--password", required=True, help="Login password")
+    parser.add_argument("--urls", help="Course URLs (comma-separated)")
+    parser.add_argument("--email", help="Login email")
+    parser.add_argument("--password", help="Login password")
     parser.add_argument("--platform", default="generic", help="Platform name")
+    parser.add_argument("--discover", action="store_true", help="Discover free certification opportunities")
     args = parser.parse_args()
 
-    urls = [url.strip() for url in args.urls.split(",")]
-    credentials = {"email": args.email, "password": args.password}
-
     with CertificationAutomation(args.config) as automation:
+        if args.discover:
+            automation.discover_free_courses()
+            if not args.urls:
+                sys.exit(0)
+
+        if not args.urls:
+            parser.print_help()
+            sys.exit(1)
+
+        urls = [url.strip() for url in args.urls.split(",")]
+        credentials = {"email": args.email or "", "password": args.password or ""}
+
         success = automation.run_multi_course(urls, args.platform, credentials)
         if success:
             sys.exit(0)

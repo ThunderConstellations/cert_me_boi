@@ -10,8 +10,6 @@ import logging
 from typing import Dict, List, Any
 from dataclasses import dataclass
 from datetime import datetime
-import asyncio
-import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +42,10 @@ class PlatformDiscovery:
     def _load_platform_config(self) -> Dict[str, Any]:
         """Load platform configuration"""
         try:
-            with open('config/courses.yaml', 'r') as file:
+            config_path = 'config/courses.yaml'
+            if not os.path.exists(config_path):
+                return {}
+            with open(config_path, 'r') as file:
                 config = yaml.safe_load(file)
                 return {p['name']: p for p in config.get('platforms', [])}
         except Exception as e:
@@ -54,7 +55,8 @@ class PlatformDiscovery:
     def _load_certification_catalog(self) -> Dict[str, Any]:
         """Load certification catalog from YAML file"""
         try:
-            with open('config/certifications.yaml', 'r', encoding='utf-8') as file:
+            catalog_path = 'config/certifications.yaml'
+            with open(catalog_path, 'r', encoding='utf-8') as file:
                 catalog = yaml.safe_load(file)
                 logger.info(
                     f"Loaded {len(catalog)} platforms from certification catalog")
@@ -241,6 +243,15 @@ class PlatformDiscovery:
     def get_platform_stats(self) -> Dict[str, Any]:
         """Get statistics about supported platforms and certifications"""
         total_platforms = len(self.certification_catalog)
+        if total_platforms == 0:
+            return {
+                'total_platforms': 0,
+                'total_certifications': 0,
+                'categories': [],
+                'difficulty_levels': [],
+                'avg_value_score': 0
+            }
+
         total_certifications = sum(len(certs)
                                    for certs in self.certification_catalog.values())
 
@@ -257,8 +268,11 @@ class PlatformDiscovery:
             'categories': sorted(list(categories)),
             'difficulty_levels': sorted(list(difficulties)),
             'avg_value_score': sum(cert['value_score'] for certs in self.certification_catalog.values()
-                                   for cert in certs) / total_certifications
+                                   for cert in certs) / total_certifications if total_certifications > 0 else 0
         }
+
+
+import os
 
 
 def main():
