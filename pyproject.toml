@@ -7,7 +7,7 @@ name = "cert_me_boi"
 version = "0.1.0"
 description = "Automated course certification system"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [
     { name = "Thunder Constellations", email = "contact@thunderconstellations.dev" },
@@ -32,7 +32,7 @@ classifiers = [
 
 [tool.black]
 line-length = 88
-target-version = ['py37']
+target-version = ['py312']
 include = '\.pyi?$'
 
 [tool.isort]
@@ -45,7 +45,7 @@ ensure_newline_before_comments = true
 line_length = 88
 
 [tool.mypy]
-python_version = "3.7"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

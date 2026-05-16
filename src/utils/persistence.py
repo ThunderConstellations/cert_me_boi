@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
+
 class DatabaseManager:
     """Manages SQLite database for tracking course progress and session state"""
 
@@ -35,18 +36,23 @@ class DatabaseManager:
             """)
             conn.commit()
 
-    def update_course_status(self, url: str, platform: str, status: str, progress: float = 0.0):
+    def update_course_status(
+        self, url: str, platform: str, status: str, progress: float = 0.0
+    ):
         """Update or insert course status"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO courses (url, platform, status, progress, last_updated)
                 VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT(url) DO UPDATE SET
                     status = excluded.status,
                     progress = excluded.progress,
                     last_updated = excluded.last_updated
-            """, (url, platform, status, progress, datetime.now()))
+            """,
+                (url, platform, status, progress, datetime.now()),
+            )
             conn.commit()
 
     def get_course_status(self, url: str) -> Optional[Dict[str, Any]]:
@@ -62,10 +68,13 @@ class DatabaseManager:
         """Record a newly earned certificate"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO certificates (course_url, path, earned_at)
                 VALUES (?, ?, ?)
-            """, (course_url, path, datetime.now()))
+            """,
+                (course_url, path, datetime.now()),
+            )
             conn.commit()
 
     def get_all_courses(self) -> List[Dict[str, Any]]:

@@ -24,42 +24,59 @@ class CourseAutomation:
         self.page = None
 
         # Configure timeouts from config with defaults
-        timeouts_config = self.config.get('timeouts', {})
+        timeouts_config = self.config.get("timeouts", {})
         self.timeouts = {
-            'default': timeouts_config.get('default', 2000),
-            'page_load': timeouts_config.get('page_load', 5000),
-            'element_wait': timeouts_config.get('element_wait', 3000)
+            "default": timeouts_config.get("default", 2000),
+            "page_load": timeouts_config.get("page_load", 5000),
+            "element_wait": timeouts_config.get("element_wait", 3000),
         }
 
         # Platforms that use generic handling
         self.generic_platforms = {
-            'huggingface', 'university_helsinki', 'upgrad', 'ibm_skills',
-            'matlab_onramp', 'cisco_netacad', 'saylor_academy', 'stepik',
-            'complexity_explorer', 'hubspot_academy', 'wolfram_u',
-            'semrush_academy', 'codesignal', 'open_university',
-            'stanford_medicine', 'edraak', 'openhpi', 'edx', 'coursera', 'udemy'
+            "huggingface",
+            "university_helsinki",
+            "upgrad",
+            "ibm_skills",
+            "matlab_onramp",
+            "cisco_netacad",
+            "saylor_academy",
+            "stepik",
+            "complexity_explorer",
+            "hubspot_academy",
+            "wolfram_u",
+            "semrush_academy",
+            "codesignal",
+            "open_university",
+            "stanford_medicine",
+            "edraak",
+            "openhpi",
+            "edx",
+            "coursera",
+            "udemy",
         }
 
         # Platform-specific handlers
         self.platform_handlers = {
-            'freecodecamp': self._handle_freecodecamp,
-            'hackerrank': self._handle_hackerrank,
-            'harvard_cs50': self._handle_harvard_cs50,
-            'kaggle': self._handle_kaggle,
-            'google_skillshop': self._handle_google_skillshop,
-            'microsoft_learn': self._handle_microsoft_learn
+            "freecodecamp": self._handle_freecodecamp,
+            "hackerrank": self._handle_hackerrank,
+            "harvard_cs50": self._handle_harvard_cs50,
+            "kaggle": self._handle_kaggle,
+            "google_skillshop": self._handle_google_skillshop,
+            "microsoft_learn": self._handle_microsoft_learn,
         }
 
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from YAML file"""
         try:
-            with open(config_path, 'r') as file:
+            with open(config_path, "r") as file:
                 return yaml.safe_load(file) or {}
         except Exception as e:
             logger.error(f"Failed to load config: {e}")
             return {}
 
-    def start_automation(self, page: Page, platform: str, course_url: str, credentials: Dict[str, str]) -> bool:
+    def start_automation(
+        self, page: Page, platform: str, course_url: str, credentials: Dict[str, str]
+    ) -> bool:
         """Start automation for a specific platform"""
         try:
             self.page = page
@@ -68,13 +85,17 @@ class CourseAutomation:
 
             # Navigation is handled by caller or login, but ensure we are on the page
             if credentials:
-                login_success = self.login_to_course(course_url, credentials.get('email', ''), credentials.get('password', ''))
+                login_success = self.login_to_course(
+                    course_url,
+                    credentials.get("email", ""),
+                    credentials.get("password", ""),
+                )
                 if not login_success:
                     logger.error(f"Login failed for {platform}")
                     return False
             else:
                 self.page.goto(course_url)
-                self.page.wait_for_load_state('networkidle')
+                self.page.wait_for_load_state("networkidle")
 
             # Use platform-specific handler or generic handler
             if platform in self.platform_handlers:
@@ -90,22 +111,26 @@ class CourseAutomation:
         """Handle login for any platform"""
         try:
             platform_config = self._get_platform_config(self.current_platform)
-            selectors = platform_config.get('selectors', {})
+            selectors = platform_config.get("selectors", {})
 
             # Navigate to course/login URL
             self.page.goto(url)
-            self.page.wait_for_load_state('networkidle')
+            self.page.wait_for_load_state("networkidle")
 
             # Click login button if present
-            login_btn = selectors.get('login_button')
+            login_btn = selectors.get("login_button")
             if login_btn and self.page.is_visible(login_btn):
                 self.page.click(login_btn)
-                self.page.wait_for_timeout(self.timeouts['default'])
+                self.page.wait_for_timeout(self.timeouts["default"])
 
             # Fill credentials
-            email_selector = selectors.get('email_input') or selectors.get('email_field')
-            password_selector = selectors.get('password_input') or selectors.get('password_field')
-            submit_selector = selectors.get('submit_button')
+            email_selector = selectors.get("email_input") or selectors.get(
+                "email_field"
+            )
+            password_selector = selectors.get("password_input") or selectors.get(
+                "password_field"
+            )
+            submit_selector = selectors.get("submit_button")
 
             if email_selector and self.page.is_visible(email_selector):
                 self.page.fill(email_selector, email)
@@ -113,10 +138,10 @@ class CourseAutomation:
                 self.page.fill(password_selector, password)
             if submit_selector and self.page.is_visible(submit_selector):
                 self.page.click(submit_selector)
-                self.page.wait_for_load_state('networkidle')
+                self.page.wait_for_load_state("networkidle")
 
             logger.info(f"Login process completed for {self.current_platform}")
-            return True # Assuming success if no exception and elements handled
+            return True  # Assuming success if no exception and elements handled
 
         except Exception as e:
             logger.error(f"Login failed for {self.current_platform}: {e}")
@@ -124,16 +149,18 @@ class CourseAutomation:
 
     def _get_platform_config(self, platform: str) -> Dict[str, Any]:
         """Get configuration for specific platform"""
-        platforms = self.config.get('platforms', [])
+        platforms = self.config.get("platforms", [])
         if isinstance(platforms, list):
             for p in platforms:
-                if p.get('name') == platform:
+                if p.get("name") == platform:
                     return p
         elif isinstance(platforms, dict):
-             return platforms.get(platform, {})
+            return platforms.get(platform, {})
         return {}
 
-    def _get_ai_reasoning_prompt(self, task_type: str, content: str, context: Optional[str] = None) -> str:
+    def _get_ai_reasoning_prompt(
+        self, task_type: str, content: str, context: Optional[str] = None
+    ) -> str:
         """Get enhanced reasoning prompt for DeepSeek R1/o1-level models"""
         if task_type == "coding":
             return f"""
@@ -150,7 +177,7 @@ class CourseAutomation:
             ### SOLUTION:
             """
         elif task_type == "assignment":
-             return f"""
+            return f"""
             ### TASK: COMPLETE ACADEMIC ASSIGNMENT
             ### INSTRUCTIONS:
             {content}
@@ -171,28 +198,36 @@ class CourseAutomation:
             challenge_count = 0
             while challenge_count < MAX_CHALLENGES:
                 challenge_count += 1
-                page.wait_for_selector('.challenge-instructions', timeout=10000)
-                instructions = page.text_content('.challenge-instructions')
-                if page.is_visible('.monaco-editor'):
-                    current_code = page.evaluate('() => window.editor?.getValue() || ""')
-                    prompt = self._get_ai_reasoning_prompt("coding", instructions, f"Current Code: {current_code}")
+                page.wait_for_selector(".challenge-instructions", timeout=10000)
+                instructions = page.text_content(".challenge-instructions")
+                if page.is_visible(".monaco-editor"):
+                    current_code = page.evaluate(
+                        '() => window.editor?.getValue() || ""'
+                    )
+                    prompt = self._get_ai_reasoning_prompt(
+                        "coding", instructions, f"Current Code: {current_code}"
+                    )
                     solution = self.model_handler.generate_text(prompt)
                     if solution:
                         if "```" in solution:
-                             solution = solution.split("```")[1]
-                             if solution.startswith("python") or solution.startswith("javascript"):
-                                 solution = "\n".join(solution.split("\n")[1:])
-                        page.evaluate('(solution) => window.editor?.setValue(solution)', solution)
-                    page.click('#test-button')
-                    page.wait_for_timeout(self.timeouts['element_wait'])
-                    if page.is_visible('#submit-button:not([disabled])'):
-                        page.click('#submit-button')
-                        page.wait_for_timeout(self.timeouts['default'])
-                if page.is_visible('.challenge-completed'):
+                            solution = solution.split("```")[1]
+                            if solution.startswith("python") or solution.startswith(
+                                "javascript"
+                            ):
+                                solution = "\n".join(solution.split("\n")[1:])
+                        page.evaluate(
+                            "(solution) => window.editor?.setValue(solution)", solution
+                        )
+                    page.click("#test-button")
+                    page.wait_for_timeout(self.timeouts["element_wait"])
+                    if page.is_visible("#submit-button:not([disabled])"):
+                        page.click("#submit-button")
+                        page.wait_for_timeout(self.timeouts["default"])
+                if page.is_visible(".challenge-completed"):
                     break
-                if page.is_visible('.btn-primary'):
-                    page.click('.btn-primary')
-                    page.wait_for_timeout(self.timeouts['default'])
+                if page.is_visible(".btn-primary"):
+                    page.click(".btn-primary")
+                    page.wait_for_timeout(self.timeouts["default"])
                 else:
                     break
             return True
@@ -204,23 +239,25 @@ class CourseAutomation:
         """Handle HackerRank skills verification"""
         try:
             logger.info("Starting HackerRank automation")
-            page.click('.skills-verification')
-            page.wait_for_timeout(self.timeouts['default'])
-            page.click('.start-challenge')
-            page.wait_for_load_state('networkidle')
-            while page.is_visible('.CodeMirror'):
-                problem_text = page.text_content('.problem-statement')
+            page.click(".skills-verification")
+            page.wait_for_timeout(self.timeouts["default"])
+            page.click(".start-challenge")
+            page.wait_for_load_state("networkidle")
+            while page.is_visible(".CodeMirror"):
+                problem_text = page.text_content(".problem-statement")
                 prompt = self._get_ai_reasoning_prompt("coding", problem_text)
                 solution = self.model_handler.generate_text(prompt)
                 if solution:
-                    page.evaluate('(solution) => window.editor?.setValue(solution)', solution)
-                page.click('.hr_tour-submit')
-                page.wait_for_timeout(self.timeouts['page_load'])
-                if not page.is_visible('.next-challenge'):
+                    page.evaluate(
+                        "(solution) => window.editor?.setValue(solution)", solution
+                    )
+                page.click(".hr_tour-submit")
+                page.wait_for_timeout(self.timeouts["page_load"])
+                if not page.is_visible(".next-challenge"):
                     break
                 else:
-                    page.click('.next-challenge')
-                    page.wait_for_timeout(self.timeouts['default'])
+                    page.click(".next-challenge")
+                    page.wait_for_timeout(self.timeouts["default"])
             return True
         except Exception as e:
             logger.error(f"HackerRank automation failed: {e}")
@@ -230,18 +267,18 @@ class CourseAutomation:
         """Handle Harvard CS50 course automation"""
         try:
             logger.info("Starting Harvard CS50 automation")
-            if page.is_visible('.lecture-video'):
-                self._watch_video(page, '.lecture-video')
-            if page.is_visible('.problem-set'):
-                page.click('.problem-set')
-                page.wait_for_timeout(self.timeouts['default'])
-                problem_text = page.text_content('.problem-description')
+            if page.is_visible(".lecture-video"):
+                self._watch_video(page, ".lecture-video")
+            if page.is_visible(".problem-set"):
+                page.click(".problem-set")
+                page.wait_for_timeout(self.timeouts["default"])
+                problem_text = page.text_content(".problem-description")
                 prompt = self._get_ai_reasoning_prompt("coding", problem_text)
                 solution = self.model_handler.generate_text(prompt)
-                if page.is_visible('textarea') and solution:
-                    page.fill('textarea', solution)
-                    page.click('.submit-btn')
-                    page.wait_for_timeout(self.timeouts['element_wait'])
+                if page.is_visible("textarea") and solution:
+                    page.fill("textarea", solution)
+                    page.click(".submit-btn")
+                    page.wait_for_timeout(self.timeouts["element_wait"])
             return True
         except Exception as e:
             logger.error(f"Harvard CS50 automation failed: {e}")
@@ -251,21 +288,23 @@ class CourseAutomation:
         """Handle Kaggle Learn automation"""
         try:
             logger.info("Starting Kaggle Learn automation")
-            while page.is_visible('.exercise'):
-                exercise_content = page.text_content('.exercise')
-                if page.is_visible('.CodeMirror'):
+            while page.is_visible(".exercise"):
+                exercise_content = page.text_content(".exercise")
+                if page.is_visible(".CodeMirror"):
                     prompt = self._get_ai_reasoning_prompt("coding", exercise_content)
                     solution = self.model_handler.generate_text(prompt)
                     if solution:
-                        page.evaluate('(solution) => window.editor?.setValue(solution)', solution)
-                    page.click('.run-button')
-                    page.wait_for_timeout(self.timeouts['element_wait'])
-                    if page.is_visible('.submit-button:not([disabled])'):
-                        page.click('.submit-button')
-                        page.wait_for_timeout(self.timeouts['default'])
-                if page.is_visible('.next-exercise'):
-                    page.click('.next-exercise')
-                    page.wait_for_timeout(self.timeouts['default'])
+                        page.evaluate(
+                            "(solution) => window.editor?.setValue(solution)", solution
+                        )
+                    page.click(".run-button")
+                    page.wait_for_timeout(self.timeouts["element_wait"])
+                    if page.is_visible(".submit-button:not([disabled])"):
+                        page.click(".submit-button")
+                        page.wait_for_timeout(self.timeouts["default"])
+                if page.is_visible(".next-exercise"):
+                    page.click(".next-exercise")
+                    page.wait_for_timeout(self.timeouts["default"])
                 else:
                     break
             return True
@@ -277,14 +316,14 @@ class CourseAutomation:
         """Handle Google Skillshop automation"""
         try:
             logger.info("Starting Google Skillshop automation")
-            while page.is_visible('.course-content'):
-                page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
-                page.wait_for_timeout(self.timeouts['default'])
-                if page.is_visible('.assessment'):
-                    self._handle_assessment(page, '.assessment')
-                if page.is_visible('.next-section'):
-                    page.click('.next-section')
-                    page.wait_for_timeout(self.timeouts['default'])
+            while page.is_visible(".course-content"):
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                page.wait_for_timeout(self.timeouts["default"])
+                if page.is_visible(".assessment"):
+                    self._handle_assessment(page, ".assessment")
+                if page.is_visible(".next-section"):
+                    page.click(".next-section")
+                    page.wait_for_timeout(self.timeouts["default"])
                 else:
                     break
             return True
@@ -296,17 +335,17 @@ class CourseAutomation:
         """Handle Microsoft Learn automation"""
         try:
             logger.info("Starting Microsoft Learn automation")
-            while page.is_visible('.module-content'):
-                page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
-                page.wait_for_timeout(self.timeouts['default'])
-                if page.is_visible('.knowledge-check'):
-                    self._handle_quiz(page, '.knowledge-check')
-                if page.is_visible('.complete-module'):
-                    page.click('.complete-module')
-                    page.wait_for_timeout(self.timeouts['default'])
-                if page.is_visible('.next-module'):
-                    page.click('.next-module')
-                    page.wait_for_timeout(self.timeouts['default'])
+            while page.is_visible(".module-content"):
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                page.wait_for_timeout(self.timeouts["default"])
+                if page.is_visible(".knowledge-check"):
+                    self._handle_quiz(page, ".knowledge-check")
+                if page.is_visible(".complete-module"):
+                    page.click(".complete-module")
+                    page.wait_for_timeout(self.timeouts["default"])
+                if page.is_visible(".next-module"):
+                    page.click(".next-module")
+                    page.wait_for_timeout(self.timeouts["default"])
                 else:
                     break
             return True
@@ -318,9 +357,11 @@ class CourseAutomation:
         """Generic video watching handler"""
         try:
             if page.is_visible(video_selector):
-                if page.is_visible('.vjs-play-control'):
-                    page.click('.vjs-play-control')
-                duration = page.evaluate('() => document.querySelector("video")?.duration || 60')
+                if page.is_visible(".vjs-play-control"):
+                    page.click(".vjs-play-control")
+                duration = page.evaluate(
+                    '() => document.querySelector("video")?.duration || 60'
+                )
                 page.wait_for_timeout(min(int(duration * 1000), 300000))
                 return True
             return False
@@ -332,27 +373,33 @@ class CourseAutomation:
         """Generic quiz handling"""
         try:
             if page.is_visible(quiz_selector):
-                questions = page.query_selector_all(f'{quiz_selector} .question')
+                questions = page.query_selector_all(f"{quiz_selector} .question")
                 for question in questions:
                     question_text = question.text_content()
-                    options = question.query_selector_all('input[type="radio"], input[type="checkbox"]')
+                    options = question.query_selector_all(
+                        'input[type="radio"], input[type="checkbox"]'
+                    )
                     context_options = []
                     for option in options:
-                        option_text = option.get_attribute('value') or option.text_content()
+                        option_text = (
+                            option.get_attribute("value") or option.text_content()
+                        )
                         if option_text:
                             context_options.append(option_text)
                     context = "Available options: " + ", ".join(context_options)
                     answer = self.model_handler.answer_question(question_text, context)
                     if answer and options:
                         for option in options:
-                            option_text = option.get_attribute('value') or option.text_content()
+                            option_text = (
+                                option.get_attribute("value") or option.text_content()
+                            )
                             if option_text and answer.lower() in option_text.lower():
                                 option.click()
                                 break
-                submit_btn = page.query_selector(f'{quiz_selector} .submit-button')
+                submit_btn = page.query_selector(f"{quiz_selector} .submit-button")
                 if submit_btn:
                     submit_btn.click()
-                    page.wait_for_timeout(self.timeouts['default'])
+                    page.wait_for_timeout(self.timeouts["default"])
                 return True
             return False
         except Exception as e:
@@ -367,22 +414,26 @@ class CourseAutomation:
         """Generic handler for platforms without specific implementation"""
         try:
             logger.info(f"Using generic handler for {self.current_platform}")
-            if page.is_visible('.video, .video-player'):
-                self._watch_video(page, '.video, .video-player')
-            if page.is_visible('.quiz, .quiz-container, .assessment'):
-                self._handle_quiz(page, '.quiz, .quiz-container, .assessment')
-            if page.is_visible('.assignment, textarea'):
-                assignment_text = page.text_content('.assignment-instructions, .assignment-description')
+            if page.is_visible(".video, .video-player"):
+                self._watch_video(page, ".video, .video-player")
+            if page.is_visible(".quiz, .quiz-container, .assessment"):
+                self._handle_quiz(page, ".quiz, .quiz-container, .assessment")
+            if page.is_visible(".assignment, textarea"):
+                assignment_text = page.text_content(
+                    ".assignment-instructions, .assignment-description"
+                )
                 if assignment_text:
-                    prompt = self._get_ai_reasoning_prompt("assignment", assignment_text)
+                    prompt = self._get_ai_reasoning_prompt(
+                        "assignment", assignment_text
+                    )
                     solution = self.model_handler.generate_text(prompt)
                     if solution:
-                        page.fill('textarea', solution)
-                        if page.is_visible('.submit-assignment, .submit-button'):
-                            page.click('.submit-assignment, .submit-button')
-            if page.is_visible('.next-button, .next-lesson, .continue-button'):
-                page.click('.next-button, .next-lesson, .continue-button')
-                page.wait_for_timeout(self.timeouts['default'])
+                        page.fill("textarea", solution)
+                        if page.is_visible(".submit-assignment, .submit-button"):
+                            page.click(".submit-assignment, .submit-button")
+            if page.is_visible(".next-button, .next-lesson, .continue-button"):
+                page.click(".next-button, .next-lesson, .continue-button")
+                page.wait_for_timeout(self.timeouts["default"])
             return True
         except Exception as e:
             logger.error(f"Generic platform handling failed: {e}")
@@ -392,20 +443,26 @@ class CourseAutomation:
         """Download certificate if available"""
         try:
             certificate_selectors = [
-                '.certificate-download', '.certificate-link', '.download-certificate',
-                '.badge-download', 'a[href*="certificate"]', 'a[href*="badge"]'
+                ".certificate-download",
+                ".certificate-link",
+                ".download-certificate",
+                ".badge-download",
+                'a[href*="certificate"]',
+                'a[href*="badge"]',
             ]
             for selector in certificate_selectors:
                 if page.is_visible(selector):
                     os.makedirs("data/certificates", exist_ok=True)
                     cert_path = f"data/certificates/{self.current_platform}_{int(time.time())}.png"
                     page.screenshot(path=cert_path)
-                    href = page.get_attribute(selector, 'href')
-                    if href and any(ext in href for ext in ['.pdf', '.png', '.jpg']):
+                    href = page.get_attribute(selector, "href")
+                    if href and any(ext in href for ext in [".pdf", ".png", ".jpg"]):
                         with page.expect_download() as download_info:
                             page.click(selector)
                         download = download_info.value
-                        download.save_as(cert_path.replace('.png', f'.{href.split(".")[-1]}'))
+                        download.save_as(
+                            cert_path.replace(".png", f'.{href.split(".")[-1]}')
+                        )
                     logger.info(f"Certificate saved: {cert_path}")
                     return cert_path
             return None
@@ -426,7 +483,7 @@ class CourseAutomation:
         return self.get_certificate(self.page)
 
     def cleanup(self):
-        if hasattr(self, 'model_handler') and self.model_handler:
+        if hasattr(self, "model_handler") and self.model_handler:
             self.model_handler.cleanup()
-        if hasattr(self, 'screen_monitor') and self.screen_monitor:
+        if hasattr(self, "screen_monitor") and self.screen_monitor:
             self.screen_monitor.cleanup()

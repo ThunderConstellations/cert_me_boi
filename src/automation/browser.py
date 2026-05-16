@@ -11,9 +11,11 @@ from src.utils.logger import logger, log_event, log_error_with_context
 # Create component-specific logger
 automation_logger = logger
 
+
 def log_automation_event(event_type: str, **kwargs) -> None:
     """Log automation-specific events"""
-    log_event(event_type, kwargs, level='INFO')
+    log_event(event_type, kwargs, level="INFO")
+
 
 class BrowserAutomation:
     """Browser automation using Playwright with human-like interaction"""
@@ -22,23 +24,23 @@ class BrowserAutomation:
         self.config = self._load_config(config_path)
         self.browser: Optional[Browser] = None
         self.page: Optional[Page] = None
-        self.screenshot_dir = Path(self.config['browser']['screenshot_dir'])
+        self.screenshot_dir = Path(self.config["browser"]["screenshot_dir"])
         self.screenshot_dir.mkdir(parents=True, exist_ok=True)
 
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load browser configuration"""
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 return yaml.safe_load(f)
         except Exception as e:
             log_error_with_context(e, "Failed to load browser config")
             return {
-                'browser': {
-                    'headless': True,
-                    'timeout': 30,
-                    'retry_attempts': 3,
-                    'screenshot_dir': 'data/screenshots',
-                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                "browser": {
+                    "headless": True,
+                    "timeout": 30,
+                    "retry_attempts": 3,
+                    "screenshot_dir": "data/screenshots",
+                    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
                 }
             }
 
@@ -47,10 +49,10 @@ class BrowserAutomation:
         try:
             playwright = sync_playwright().start()
             self.browser = playwright.chromium.launch(
-                headless=self.config['browser']['headless']
+                headless=self.config["browser"]["headless"]
             )
             self.page = self.browser.new_page(
-                user_agent=self.config['browser']['user_agent']
+                user_agent=self.config["browser"]["user_agent"]
             )
             log_automation_event("browser_started")
             return True
@@ -77,7 +79,7 @@ class BrowserAutomation:
         """Navigate to URL with human-like delay"""
         try:
             self._human_delay(1.0, 3.0)
-            self.page.goto(url, timeout=self.config['browser']['timeout'] * 1000)
+            self.page.goto(url, timeout=self.config["browser"]["timeout"] * 1000)
             log_automation_event("page_loaded", url=url)
             return True
         except Exception as e:
@@ -107,10 +109,10 @@ class BrowserAutomation:
             self._human_delay(0.5, 1.2)
             element = self.page.wait_for_selector(selector)
             if element:
-                element.click() # Focus first
+                element.click()  # Focus first
                 for char in value:
                     self.page.keyboard.type(char)
-                    time.sleep(random.uniform(0.05, 0.25)) # Variable typing speed
+                    time.sleep(random.uniform(0.05, 0.25))  # Variable typing speed
                 log_automation_event("input_filled", selector=selector)
                 return True
             return False

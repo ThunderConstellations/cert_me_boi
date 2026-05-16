@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CertificationOpportunity:
     """Represents a certification opportunity"""
+
     platform: str
     title: str
     provider: str
@@ -42,12 +43,12 @@ class PlatformDiscovery:
     def _load_platform_config(self) -> Dict[str, Any]:
         """Load platform configuration"""
         try:
-            config_path = 'config/courses.yaml'
+            config_path = "config/courses.yaml"
             if not os.path.exists(config_path):
                 return {}
-            with open(config_path, 'r') as file:
+            with open(config_path, "r") as file:
                 config = yaml.safe_load(file)
-                return {p['name']: p for p in config.get('platforms', [])}
+                return {p["name"]: p for p in config.get("platforms", [])}
         except Exception as e:
             logger.error(f"Failed to load platform config: {e}")
             return {}
@@ -55,15 +56,17 @@ class PlatformDiscovery:
     def _load_certification_catalog(self) -> Dict[str, Any]:
         """Load certification catalog from YAML file"""
         try:
-            catalog_path = 'config/certifications.yaml'
-            with open(catalog_path, 'r', encoding='utf-8') as file:
+            catalog_path = "config/certifications.yaml"
+            with open(catalog_path, "r", encoding="utf-8") as file:
                 catalog = yaml.safe_load(file)
                 logger.info(
-                    f"Loaded {len(catalog)} platforms from certification catalog")
+                    f"Loaded {len(catalog)} platforms from certification catalog"
+                )
                 return catalog
         except FileNotFoundError:
             logger.error(
-                "Certification catalog file 'config/certifications.yaml' not found")
+                "Certification catalog file 'config/certifications.yaml' not found"
+            )
             return {}
         except yaml.YAMLError as e:
             logger.error(f"Failed to parse certification catalog YAML: {e}")
@@ -72,77 +75,83 @@ class PlatformDiscovery:
             logger.error(f"Failed to load certification catalog: {e}")
             return {}
 
-    def get_recommendations_by_category(self, category: str) -> List[CertificationOpportunity]:
+    def get_recommendations_by_category(
+        self, category: str
+    ) -> List[CertificationOpportunity]:
         """Get certification recommendations by category"""
         recommendations = []
 
         for platform, certs in self.certification_catalog.items():
             for cert in certs:
-                if cert.get('category', '').lower() == category.lower():
+                if cert.get("category", "").lower() == category.lower():
                     opportunity = CertificationOpportunity(
                         platform=platform,
-                        title=cert['title'],
-                        provider=platform.replace('_', ' ').title(),
-                        category=cert['category'],
-                        difficulty=cert['difficulty'],
-                        duration=cert['duration'],
+                        title=cert["title"],
+                        provider=platform.replace("_", " ").title(),
+                        category=cert["category"],
+                        difficulty=cert["difficulty"],
+                        duration=cert["duration"],
                         url=self._get_platform_url(platform),
                         is_free=True,
                         prerequisites=[],
-                        skills_covered=cert['skills'],
-                        certificate_type=cert['certificate_type'],
-                        value_score=cert['value_score']
+                        skills_covered=cert["skills"],
+                        certificate_type=cert["certificate_type"],
+                        value_score=cert["value_score"],
                     )
                     recommendations.append(opportunity)
 
         # Sort by value score
         return sorted(recommendations, key=lambda x: x.value_score, reverse=True)
 
-    def get_recommendations_by_skill(self, skill: str) -> List[CertificationOpportunity]:
+    def get_recommendations_by_skill(
+        self, skill: str
+    ) -> List[CertificationOpportunity]:
         """Get certification recommendations by skill"""
         recommendations = []
 
         for platform, certs in self.certification_catalog.items():
             for cert in certs:
-                if any(skill.lower() in s.lower() for s in cert['skills']):
+                if any(skill.lower() in s.lower() for s in cert["skills"]):
                     opportunity = CertificationOpportunity(
                         platform=platform,
-                        title=cert['title'],
-                        provider=platform.replace('_', ' ').title(),
-                        category=cert['category'],
-                        difficulty=cert['difficulty'],
-                        duration=cert['duration'],
+                        title=cert["title"],
+                        provider=platform.replace("_", " ").title(),
+                        category=cert["category"],
+                        difficulty=cert["difficulty"],
+                        duration=cert["duration"],
                         url=self._get_platform_url(platform),
                         is_free=True,
                         prerequisites=[],
-                        skills_covered=cert['skills'],
-                        certificate_type=cert['certificate_type'],
-                        value_score=cert['value_score']
+                        skills_covered=cert["skills"],
+                        certificate_type=cert["certificate_type"],
+                        value_score=cert["value_score"],
                     )
                     recommendations.append(opportunity)
 
         return sorted(recommendations, key=lambda x: x.value_score, reverse=True)
 
-    def get_recommendations_by_difficulty(self, difficulty: str) -> List[CertificationOpportunity]:
+    def get_recommendations_by_difficulty(
+        self, difficulty: str
+    ) -> List[CertificationOpportunity]:
         """Get certification recommendations by difficulty level"""
         recommendations = []
 
         for platform, certs in self.certification_catalog.items():
             for cert in certs:
-                if cert.get('difficulty', '').lower() == difficulty.lower():
+                if cert.get("difficulty", "").lower() == difficulty.lower():
                     opportunity = CertificationOpportunity(
                         platform=platform,
-                        title=cert['title'],
-                        provider=platform.replace('_', ' ').title(),
-                        category=cert['category'],
-                        difficulty=cert['difficulty'],
-                        duration=cert['duration'],
+                        title=cert["title"],
+                        provider=platform.replace("_", " ").title(),
+                        category=cert["category"],
+                        difficulty=cert["difficulty"],
+                        duration=cert["duration"],
                         url=self._get_platform_url(platform),
                         is_free=True,
                         prerequisites=[],
-                        skills_covered=cert['skills'],
-                        certificate_type=cert['certificate_type'],
-                        value_score=cert['value_score']
+                        skills_covered=cert["skills"],
+                        certificate_type=cert["certificate_type"],
+                        value_score=cert["value_score"],
                     )
                     recommendations.append(opportunity)
 
@@ -156,39 +165,46 @@ class PlatformDiscovery:
             for cert in certs:
                 opportunity = CertificationOpportunity(
                     platform=platform,
-                    title=cert['title'],
-                    provider=platform.replace('_', ' ').title(),
-                    category=cert['category'],
-                    difficulty=cert['difficulty'],
-                    duration=cert['duration'],
+                    title=cert["title"],
+                    provider=platform.replace("_", " ").title(),
+                    category=cert["category"],
+                    difficulty=cert["difficulty"],
+                    duration=cert["duration"],
                     url=self._get_platform_url(platform),
                     is_free=True,
                     prerequisites=[],
-                    skills_covered=cert['skills'],
-                    certificate_type=cert['certificate_type'],
-                    value_score=cert['value_score']
+                    skills_covered=cert["skills"],
+                    certificate_type=cert["certificate_type"],
+                    value_score=cert["value_score"],
                 )
                 all_recommendations.append(opportunity)
 
-        return sorted(all_recommendations, key=lambda x: x.value_score, reverse=True)[:limit]
+        return sorted(all_recommendations, key=lambda x: x.value_score, reverse=True)[
+            :limit
+        ]
 
-    def get_career_path_recommendations(self, career_path: str) -> List[CertificationOpportunity]:
+    def get_career_path_recommendations(
+        self, career_path: str
+    ) -> List[CertificationOpportunity]:
         """Get certification recommendations for specific career paths"""
         career_mappings = {
-            'data_scientist': ['Programming', 'Data Science', 'Artificial Intelligence'],
-            'web_developer': ['Web Development', 'Programming'],
-            'digital_marketer': ['Digital Marketing'],
-            'cloud_engineer': ['Cloud Computing'],
-            'cybersecurity': ['Cybersecurity', 'Networking'],
-            'business_analyst': ['Business Applications', 'Data Science']
+            "data_scientist": [
+                "Programming",
+                "Data Science",
+                "Artificial Intelligence",
+            ],
+            "web_developer": ["Web Development", "Programming"],
+            "digital_marketer": ["Digital Marketing"],
+            "cloud_engineer": ["Cloud Computing"],
+            "cybersecurity": ["Cybersecurity", "Networking"],
+            "business_analyst": ["Business Applications", "Data Science"],
         }
 
         categories = career_mappings.get(career_path.lower(), [])
         recommendations = []
 
         for category in categories:
-            recommendations.extend(
-                self.get_recommendations_by_category(category))
+            recommendations.extend(self.get_recommendations_by_category(category))
 
         # Remove duplicates and sort by value
         seen = set()
@@ -203,10 +219,11 @@ class PlatformDiscovery:
     def _get_platform_url(self, platform: str) -> str:
         """Get base URL for platform"""
         platform_config = self.platforms.get(platform, {})
-        return platform_config.get('base_url', f'https://{platform}.com')
+        return platform_config.get("base_url", f"https://{platform}.com")
 
-    def export_recommendations(self, recommendations: List[CertificationOpportunity],
-                               filename: str = None) -> str:
+    def export_recommendations(
+        self, recommendations: List[CertificationOpportunity], filename: str = None
+    ) -> str:
         """Export recommendations to markdown file"""
         if not filename:
             filename = f"certification_recommendations_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
@@ -235,7 +252,7 @@ class PlatformDiscovery:
                 content += f"- **URL**: {cert.url}\n\n"
 
         # Save to file
-        with open(filename, 'w', encoding='utf-8') as f:
+        with open(filename, "w", encoding="utf-8") as f:
             f.write(content)
 
         return filename
@@ -245,30 +262,39 @@ class PlatformDiscovery:
         total_platforms = len(self.certification_catalog)
         if total_platforms == 0:
             return {
-                'total_platforms': 0,
-                'total_certifications': 0,
-                'categories': [],
-                'difficulty_levels': [],
-                'avg_value_score': 0
+                "total_platforms": 0,
+                "total_certifications": 0,
+                "categories": [],
+                "difficulty_levels": [],
+                "avg_value_score": 0,
             }
 
-        total_certifications = sum(len(certs)
-                                   for certs in self.certification_catalog.values())
+        total_certifications = sum(
+            len(certs) for certs in self.certification_catalog.values()
+        )
 
         categories = set()
         difficulties = set()
         for certs in self.certification_catalog.values():
             for cert in certs:
-                categories.add(cert['category'])
-                difficulties.add(cert['difficulty'])
+                categories.add(cert["category"])
+                difficulties.add(cert["difficulty"])
 
         return {
-            'total_platforms': total_platforms,
-            'total_certifications': total_certifications,
-            'categories': sorted(list(categories)),
-            'difficulty_levels': sorted(list(difficulties)),
-            'avg_value_score': sum(cert['value_score'] for certs in self.certification_catalog.values()
-                                   for cert in certs) / total_certifications if total_certifications > 0 else 0
+            "total_platforms": total_platforms,
+            "total_certifications": total_certifications,
+            "categories": sorted(list(categories)),
+            "difficulty_levels": sorted(list(difficulties)),
+            "avg_value_score": (
+                sum(
+                    cert["value_score"]
+                    for certs in self.certification_catalog.values()
+                    for cert in certs
+                )
+                / total_certifications
+                if total_certifications > 0
+                else 0
+            ),
         }
 
 
@@ -300,7 +326,7 @@ def main():
 
     # Show recommendations by category
     print("💼 Data Science Career Path:")
-    ds_certs = discovery.get_career_path_recommendations('data_scientist')
+    ds_certs = discovery.get_career_path_recommendations("data_scientist")
     for cert in ds_certs[:5]:
         print(f"   - {cert.title} ({cert.provider}) - {cert.difficulty}")
 

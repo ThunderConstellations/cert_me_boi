@@ -342,20 +342,6 @@ class RealAutomationManager:
         except Exception as e:
             self.log_event("ERROR", f"Failed to stop course: {e}")
             return False
-            # Create sanitized copy without sensitive data
-            sanitized_courses = {}
-            for course_id, course in self.courses.items():
-                sanitized_course = course.copy()
-                sanitized_course.pop('password', None)
-                sanitized_courses[course_id] = sanitized_course
-
-            data = {
-                'courses': sanitized_courses,
-                'export_time': datetime.now().isoformat(),
-                'statistics': self.get_statistics()
-            }
-            with open(filepath, 'w') as f:
-                json.dump(data, f, indent=2, default=str)
 
     def pause_course(self, course_id: str) -> bool:
         """Pause automation for a specific course"""

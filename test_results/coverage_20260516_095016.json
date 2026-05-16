@@ -1,0 +1,136 @@
+{
+  "timestamp": "2026-05-16T09:50:19.037308",
+  "total_coverage": 0.0,
+  "coverage_by_file": {
+    "/app/src/utils/metrics_collector.py": {
+      "total_lines": 141,
+      "missing_lines": 141,
+      "coverage_percent": 0.0
+    },
+    "/app/src/utils/logger.py": {
+      "total_lines": 193,
+      "missing_lines": 193,
+      "coverage_percent": 0.0
+    },
+    "/app/src/utils/base_logger.py": {
+      "total_lines": 58,
+      "missing_lines": 58,
+      "coverage_percent": 0.0
+    },
+    "/app/src/monitor/screen_monitor.py": {
+      "total_lines": 132,
+      "missing_lines": 132,
+      "coverage_percent": 0.0
+    },
+    "/app/src/utils/log_analyzer.py": {
+      "total_lines": 154,
+      "missing_lines": 154,
+      "coverage_percent": 0.0
+    },
+    "/app/src/utils/persistence.py": {
+      "total_lines": 38,
+      "missing_lines": 38,
+      "coverage_percent": 0.0
+    },
+    "/app/src/automation/__init__.py": {
+      "total_lines": 0,
+      "missing_lines": 0,
+      "coverage_percent": 0
+    },
+    "/app/src/utils/log_aggregator.py": {
+      "total_lines": 150,
+      "missing_lines": 150,
+      "coverage_percent": 0.0
+    },
+    "/app/src/test_setup.py": {
+      "total_lines": 58,
+      "missing_lines": 58,
+      "coverage_percent": 0.0
+    },
+    "/app/src/automation/browser.py": {
+      "total_lines": 104,
+      "missing_lines": 104,
+      "coverage_percent": 0.0
+    },
+    "/app/src/gui_integration.py": {
+      "total_lines": 315,
+      "missing_lines": 315,
+      "coverage_percent": 0.0
+    },
+    "/app/src/__init__.py": {
+      "total_lines": 0,
+      "missing_lines": 0,
+      "coverage_percent": 0
+    },
+    "/app/src/monitor/video_monitor.py": {
+      "total_lines": 140,
+      "missing_lines": 140,
+      "coverage_percent": 0.0
+    },
+    "/app/src/automation/enhanced_course_automation.py": {
+      "total_lines": 451,
+      "missing_lines": 451,
+      "coverage_percent": 0.0
+    },
+    "/app/src/main.py": {
+      "total_lines": 131,
+      "missing_lines": 131,
+      "coverage_percent": 0.0
+    },
+    "/app/src/utils/error_handler.py": {
+      "total_lines": 64,
+      "missing_lines": 64,
+      "coverage_percent": 0.0
+    },
+    "/app/src/ai/__init__.py": {
+      "total_lines": 0,
+      "missing_lines": 0,
+      "coverage_percent": 0
+    },
+    "/app/src/ai/model_handler.py": {
+      "total_lines": 242,
+      "missing_lines": 242,
+      "coverage_percent": 0.0
+    },
+    "/app/src/utils/logger_instance.py": {
+      "total_lines": 47,
+      "missing_lines": 47,
+      "coverage_percent": 0.0
+    },
+    "/app/src/automation/course_automation.py": {
+      "total_lines": 293,
+      "missing_lines": 293,
+      "coverage_percent": 0.0
+    },
+    "/app/src/enhanced_automation.py": {
+      "total_lines": 263,
+      "missing_lines": 263,
+      "coverage_percent": 0.0
+    },
+    "/app/src/utils/recovery_manager.py": {
+      "total_lines": 142,
+      "missing_lines": 142,
+      "coverage_percent": 0.0
+    },
+    "/app/src/utils/__init__.py": {
+      "total_lines": 0,
+      "missing_lines": 0,
+      "coverage_percent": 0
+    },
+    "/app/src/platform_discovery.py": {
+      "total_lines": 159,
+      "missing_lines": 159,
+      "coverage_percent": 0.0
+    },
+    "/app/src/monitor/__init__.py": {
+      "total_lines": 0,
+      "missing_lines": 0,
+      "coverage_percent": 0
+    },
+    "/app/src/utils/log_rotation.py": {
+      "total_lines": 76,
+      "missing_lines": 76,
+      "coverage_percent": 0.0
+    }
+  }
+}
